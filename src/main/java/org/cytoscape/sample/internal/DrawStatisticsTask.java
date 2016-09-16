@@ -19,6 +19,7 @@ import java.util.Map;
 import javax.imageio.ImageIO;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.work.AbstractTask;
 import org.cytoscape.work.TaskMonitor;
@@ -43,17 +44,19 @@ public class DrawStatisticsTask extends AbstractTask {
 		JFileChooser dialog = new JFileChooser();
 		dialog.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 		dialog.setAcceptAllFileFilterUsed(false); 
-	    dialog.showOpenDialog(myframe);
 	    
-	    // Local base initialization
-	    this.mybasedirectory = dialog.getSelectedFile();
-	    dialog.setVisible(true);
-	    // "Cancel" button option
-	    File dir = new File(mybasedirectory + sep);
-    	if (!dir.exists()){
-    		return;
-    	}
-	      
+		// Local base initialization
+		int returnValue = dialog.showOpenDialog(myframe);		
+		if (returnValue == javax.swing.JFileChooser.APPROVE_OPTION){
+			this.mybasedirectory = dialog.getSelectedFile();
+			dialog.setVisible(true);
+		}
+		else{
+		    // "Cancel" button option
+			System.out.println("Cancelled");
+			return;
+		}
+			      
     	// Old code with bar chat data 
 //	    dir = new File(mybasedirectory + sep + "Output" + sep + "Full taxonomy data" + sep);
 //    	if (!dir.exists()){
@@ -303,7 +306,6 @@ public class DrawStatisticsTask extends AbstractTask {
     			alotofdata.add(serie);    
     		}
         }    
-        
         // Make the list of organisms only
         List<String> alotofuniqueorgs = new ArrayList<String>();
         for (int j=0; j<alotoforgs.size(); j++){
@@ -378,8 +380,10 @@ public class DrawStatisticsTask extends AbstractTask {
 			" <center><h1>Global analysis of Phylostratigraphic Age Index </h1></center>");
 	    	htmlik.println("List of  networks:");										 
 	    	for (int alot=0; alot < alotofnames.size() ; alot++){
-				 htmlik.println("<p><a href=\"" + alotofnames.get(alot) + sep + alotofnames.get(alot) + " report.html" + "\">" + alotofnames.get(alot) + "</a></p>");										
-			}
+	    		if (alotoforgs.get(alot).equals(alotofuniqueorgs.get(z))){
+	    			htmlik.println("<p><a href=\"" + alotofnames.get(alot) + sep + alotofnames.get(alot) + " report.html" + "\">" + alotofnames.get(alot) + "</a></p>");										
+	    		}
+	    	}
 			 htmlik.println(				
 			 " <center><img alt=\"Gene set PAI statistic values comparison(identity)\" src=\"Gene set PAI statistic comparison(identity).PNG\"></center>" +
 			 " <br/><br/>" +

@@ -32,9 +32,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JTable;
 import javax.swing.JTextField;
-import javax.swing.table.DefaultTableModel;
 import javax.swing.text.MaskFormatter;
 
 import org.cytoscape.model.CyColumn;
@@ -44,20 +42,13 @@ import org.cytoscape.model.CyRow;
 import org.cytoscape.work.AbstractTask;
 import org.cytoscape.work.TaskMonitor;
 import org.cytoscape.model.CyTable;
-import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.axis.CategoryAxis;
 import org.jfree.chart.axis.CategoryLabelPositions;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.PlotOrientation;
-import org.jfree.chart.plot.XYPlot;
-import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.category.DefaultCategoryDataset;
-import org.jfree.data.xy.XYDataset;
-import org.jfree.data.xy.XYSeries;
-import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.ApplicationFrame;
 import org.cytoscape.sample.internal.ApplicationConstants;
 
 public class AgeSearchTask extends AbstractTask  implements ApplicationConstants {
@@ -968,6 +959,11 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	 	netstorage.set(0, netstorage.get(0).replace(">", "__"));
 	 	netstorage.set(0, netstorage.get(0).replace("<", "__"));
 	 	netstorage.set(0, netstorage.get(0).replace("|", "__"));
+	 	
+	 	// reducing the number of symbols in network name to 37 (+ KEGGID if necessary) 
+	 	if (netstorage.get(0).length() > 40){
+	 		netstorage.set(0, netstorage.get(0).substring(0, 37) + "...");
+	 	}
 	 	
  	 	String netName = "";
  	 	if (networksTable.getColumn("BIOPAX_NETWORK") != null){

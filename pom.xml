@@ -106,39 +106,16 @@
 		</dependency>
 		<dependency>
 			<groupId>org.cytoscape</groupId>
-			<artifactId>group-api</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.cytoscape</groupId>
 			<artifactId>event-api</artifactId>
 		</dependency>
 
-
-
-		<dependency>
-			<groupId>org.biojava</groupId>
-			<artifactId>biojava-core</artifactId>
-			<version>4.2.0</version>
-		</dependency>
-		<dependency>
-			<groupId>org.biojava</groupId>
-			<artifactId>core</artifactId>
-			<version>1.9.0</version>
-		</dependency>
-		<dependency>
-			<groupId>org.biojava</groupId>
-			<artifactId>biojava-alignment</artifactId>
-			<version>4.2.0</version>
-		</dependency>
-		<dependency>
-			<groupId>org.biojava</groupId>
-			<artifactId>alignment</artifactId>
-			<version>1.9.1</version>
-		</dependency>
 		<dependency>
 			<groupId>org.jfree</groupId>
 			<artifactId>jfreechart</artifactId>
-			<version>1.0.19</version>
+		</dependency>
+		<dependency>
+			<groupId>org.cytoscape</groupId>
+			<artifactId>group-api</artifactId>
 		</dependency>
 	</dependencies>
 
@@ -158,6 +135,11 @@
 				<groupId>org.cytoscape</groupId>
 				<artifactId>event-api</artifactId>
 				<version>${cytoscape.api.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.jfree</groupId>
+				<artifactId>jfreechart</artifactId>
+				<version>1.0.19</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
