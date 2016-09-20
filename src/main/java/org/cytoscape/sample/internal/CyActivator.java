@@ -88,12 +88,7 @@ public class CyActivator extends AbstractCyActivator {
 		VisualMappingFunctionFactory vmfFactoryC = getService(bc,VisualMappingFunctionFactory.class, "(mapping.type=continuous)");
 		VisualMappingFunctionFactory vmfFactoryD = getService(bc,VisualMappingFunctionFactory.class, "(mapping.type=discrete)");
 		VisualMappingFunctionFactory vmfFactoryP = getService(bc,VisualMappingFunctionFactory.class, "(mapping.type=passthrough)");
-								
-		// Visual stiles data initialization (PAI Blue-Red)
-		CreateBlueRedPAIVisualStyleAction CreateBlueRedPAIVisualStyleAction = new CreateBlueRedPAIVisualStyleAction(cyApplicationManagerServiceRef, vmmServiceRef, visualStyleFactoryServiceRef, 
-				vmfFactoryC, vmfFactoryD, vmfFactoryP);
-		
-		registerService(bc,CreateBlueRedPAIVisualStyleAction,CyAction.class, new Properties());
+			
 		
 		// Visual stiles data initialization (DI Blue-Red)
 		CreateBlueRedDIVisualStyleAction CreateBlueRedDIVisualStyleAction = new CreateBlueRedDIVisualStyleAction(cyApplicationManagerServiceRef, vmmServiceRef, visualStyleFactoryServiceRef, 
@@ -107,18 +102,24 @@ public class CyActivator extends AbstractCyActivator {
 		
 		registerService(bc,CreateBlueRedGroupVisualStyleAction,CyAction.class, new Properties());
 		
-		// Visual stiles data initialization (Homology clusters heatmap)
-		CreateHeatmapGroupVisualStyleAction CreateHeatmapGroupVisualStyleAction = new CreateHeatmapGroupVisualStyleAction(cyApplicationManagerServiceRef, vmmServiceRef, visualStyleFactoryServiceRef, 
+		// Visual stiles data initialization (PAI Blue-Red)
+		CreateBlueRedPAIVisualStyleAction CreateBlueRedPAIVisualStyleAction = new CreateBlueRedPAIVisualStyleAction(cyApplicationManagerServiceRef, vmmServiceRef, visualStyleFactoryServiceRef, 
 				vmfFactoryC, vmfFactoryD, vmfFactoryP);
 		
-		registerService(bc,CreateHeatmapGroupVisualStyleAction,CyAction.class, new Properties());
-		
+		registerService(bc,CreateBlueRedPAIVisualStyleAction,CyAction.class, new Properties());
+				
 		// Visual stiles data initialization (DI heatmap)
 		CreateHeatmapDIVisualStyleAction CreateHeatmapDIVisualStyleAction = new CreateHeatmapDIVisualStyleAction(cyApplicationManagerServiceRef, vmmServiceRef, visualStyleFactoryServiceRef, 
 				vmfFactoryC, vmfFactoryD, vmfFactoryP);
 		
 		registerService(bc,CreateHeatmapDIVisualStyleAction,CyAction.class, new Properties());
 		
+		// Visual stiles data initialization (Homology clusters heatmap)
+		CreateHeatmapGroupVisualStyleAction CreateHeatmapGroupVisualStyleAction = new CreateHeatmapGroupVisualStyleAction(cyApplicationManagerServiceRef, vmmServiceRef, visualStyleFactoryServiceRef, 
+				vmfFactoryC, vmfFactoryD, vmfFactoryP);
+		
+		registerService(bc,CreateHeatmapGroupVisualStyleAction,CyAction.class, new Properties());
+			
 		// Visual stiles data initialization (PAI heatmap)
 		CreateHeatMapPAIVisualStyleAction CreateHeatMapPAIVisualStyleAction = new CreateHeatMapPAIVisualStyleAction(cyApplicationManagerServiceRef, vmmServiceRef, visualStyleFactoryServiceRef, 
 				vmfFactoryC, vmfFactoryD, vmfFactoryP);

@@ -12,6 +12,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
 import org.cytoscape.application.CyApplicationManager;
 import org.cytoscape.application.swing.AbstractCyAction;
 import org.cytoscape.model.CyColumn;
@@ -147,14 +148,18 @@ public class CreateBlueRedPAIVisualStyleAction extends AbstractCyAction {
 		List<String> taxstorage = new ArrayList<String>();
 		
 		for (int t=alltaxes.length-1; t>=0; t--){
-			taxstorage.add(alltaxes[t].trim());
+			if (t<9){
+				taxstorage.add( "0" + String.valueOf(t+1) + "_" + alltaxes[t].trim());
+			}
+			else{
+				taxstorage.add( String.valueOf(t+1) + "_" + alltaxes[t].trim());
+			}
 		}
-		taxstorage.add("Cellular Organisms");
+		taxstorage.add("00_Cellular Organisms");
 					
  		dMapping.putMapValue("It's a path", Color.WHITE);
  		dMapping.putMapValue("It's a compound", Color.WHITE);
- 		dMapping.putMapValue("It's Kegg own ortholog group", Color.WHITE);
- 		dMapping.putMapValue("There is no homologs with this identity value", Color.WHITE);
+ 		dMapping.putMapValue("It's Kegg own orthologous group", Color.WHITE);
  		dMapping.putMapValue("No data", Color.WHITE);
  		
 		float value; 

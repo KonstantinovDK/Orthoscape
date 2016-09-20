@@ -691,7 +691,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	    		continue;
 	    	}
 	    	if(namedata.contains("ko:")){		        
-	    		allAges[i] = "It's Kegg own ortholog group";
+	    		allAges[i] = "It's Kegg own orthologous group";
 	    		allAgesPower[i] = 0;
 	    		DISumm[i] = 0d;
 	    		DISummx2[i] = 0d;
@@ -724,7 +724,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 		        namedata = curname[1];
 		    }
 		    
-		    // // Loading the page with data about orthologs
+		    // Loading the page with data about orthologs
 		    for (int j=0; j < v_namedata.size(); j++){
 			    	
 		   	     try {		   	     
@@ -832,7 +832,27 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 		 	
 		 	String[] curlines;
 	       	curlines = allAges[i].split(";");
-	       	nodeRow.set("PAI", curlines[curlines.length-1].trim());
+	       	if (curlines.length == 1){
+	       		if (curlines[curlines.length-1].equals("Cellular Organisms")){
+	       			nodeRow.set("PAI", "00_Cellular Organisms");
+	       		}
+	       		else{
+	       			if (curlines[curlines.length-1].equals("Archaea") ||curlines[curlines.length-1].equals("Bacteria") || curlines[curlines.length-1].equals("Eukaryota")){
+	       				nodeRow.set("PAI", "01_" + curlines[curlines.length-1].trim());
+	       			}
+	       			else{
+		       			nodeRow.set("PAI", curlines[curlines.length-1].trim());
+		       		}
+	       		}
+	       	}	
+	       	else{
+		       	if (curlines.length < 10){
+		       		nodeRow.set("PAI", "0" + curlines.length + "_" + curlines[curlines.length-1].trim());
+		       	}
+		       	else{
+		       		nodeRow.set("PAI", curlines.length + "_" + curlines[curlines.length-1].trim());
+		       	}
+	       	}
 	       	nodeRow.set("PAI Power", allAgesPower[i]);
 	       	totalOrthologs += allAgesPower[i];
 	       		       	
@@ -883,24 +903,29 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 		Map<String, Integer> myTaxonomy = new HashMap<String, Integer>();
 		myTaxonomy.put("It's a path", 0);
 		myTaxonomy.put("It's a compound", 0);
-		myTaxonomy.put("It's Kegg own ortholog group", 0);
-		myTaxonomy.put("There is no homologs with this identity value", 0);
-		myTaxonomy.put("Cellular Organisms", 0);
+		myTaxonomy.put("It's Kegg own orthologous group", 0);
+		myTaxonomy.put("00_Cellular Organisms", 0);
 		myTaxonomy.put("No data", 0);
 		
 		String[] alltaxes = orgtax.split(";");
 		for (int i=0; i<alltaxes.length; i++){
-			myTaxonomy.put(alltaxes[i].trim(), 0);			
+			if (i<9){
+				alltaxes[i] = "0" + (i+1) + "_" + alltaxes[i].trim();
+				myTaxonomy.put(alltaxes[i], 0);
+			}
+			else{
+				alltaxes[i] = (i+1) + "_" + alltaxes[i].trim();
+				myTaxonomy.put(alltaxes[i], 0);
+			}		
 		}
 		Map<String, Integer> taxesWeight = new HashMap<String, Integer>();
-		taxesWeight.put("Cellular Organisms", 0);
+		taxesWeight.put("00_Cellular Organisms", 0);
 		for (int i=0; i<alltaxes.length; i++){
 			taxesWeight.put(alltaxes[i].trim(), i+1);			
 		}
 		taxesWeight.put("It's a path", 0);
 		taxesWeight.put("It's a compound", 0);
-		taxesWeight.put("It's Kegg own ortholog group", 0);
-		taxesWeight.put("There is no homologs with this identity value", 0);	
+		taxesWeight.put("It's Kegg own orthologous group", 0);	
 		taxesWeight.put("No data", 0);
  		CyColumn mysuidcolumn = nodeTable.getColumn("SUID");
  		List<Long> suidstorage;		
@@ -995,7 +1020,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	 	PrintStream outTax = new PrintStream(mybasedirectory + sep + "Output" + sep + "Pictures and reports" + sep + orgstorage.get(0) + sep + netName + sep
 				+ netName + "___source___identity=" + Double.toString(equality) + "___SW-Score=" + Integer.toString(SWScore) + ".txt");
 		
-		outTax.println(myTaxonomy.get("Cellular Organisms"));
+		outTax.println(myTaxonomy.get("00_Cellular Organisms"));
 		for (int t=0; t<=alltaxes.length-1; t++){
 			outTax.println(myTaxonomy.get(alltaxes[t].trim()));
 		}
@@ -1046,7 +1071,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
         DefaultCategoryDataset xyDataset = new DefaultCategoryDataset();
         String serie = netstorage.get(0);
         
-        xyDataset.addValue(myTaxonomy.get("Cellular Organisms"), serie, "Cellular Organisms");
+        xyDataset.addValue(myTaxonomy.get("00_Cellular Organisms"), serie, "00_Cellular Organisms");
 		for (int t=0; t<=alltaxes.length-1; t++){
 			xyDataset.addValue(myTaxonomy.get(alltaxes[t].trim()), serie, alltaxes[t].trim());
 		}
@@ -1646,7 +1671,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	       	if (outputmark){
 	       		out_.println(curURLagain);
 	       	}
-	       	if ((allAges[rowCounter] == null) || (allAges[rowCounter].equals("There is no homologs with this identity value")) || (allAges[rowCounter].equals("No data"))){
+	       	if ((allAges[rowCounter].equals("No data"))){
 	    		allAges[rowCounter] = curURLagain;
 	    		orgtax = curURLagain;
 	    		allAgesPower[rowCounter]++;
@@ -1694,11 +1719,6 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	    	}
 			}
 		 	allAgesPower[rowCounter] = allAgesPower[rowCounter] + currentgomologs.size() - missedgomologs;
-			if (currentgomologs.size() == 0){
-			   	if (allAges[rowCounter] == null){
-			   		allAges[rowCounter] = "There is no homologs with this identity value";
-			   	}
-			}
 		}catch (IOException e2){ e2.printStackTrace(); }             	
 	}   
 
