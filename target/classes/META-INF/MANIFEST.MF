@@ -4,7 +4,7 @@ Bundle-Name: Orthoscape
 Bundle-Version: 1.0
 Built-By: MustafinZS
 Bundle-ManifestVersion: 2
-Bnd-LastModified: 1474270380358
+Bnd-LastModified: 1474435176566
 Bundle-Activator: org.cytoscape.sample.internal.CyActivator
 Import-Package: javax.imageio,javax.swing,javax.swing.text,org.cytosca
  pe.application;version="[3.0,4)",org.cytoscape.application.swing;vers

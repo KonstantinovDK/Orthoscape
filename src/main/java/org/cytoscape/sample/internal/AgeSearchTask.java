@@ -2047,7 +2047,10 @@ public void DIPrinting(double difpercent, String orgName, String ortoName){
 	}catch (IOException e2){ e2.printStackTrace(); }
 }
 
+
 //// KaKsCalculator source code implemented
+// http://kakscalculator.fumba.me/index.jsp
+// https://github.com/fumba/kaks-calculator
 
 ///**
 // * Calculation of Ka/Ks using both JK and K2P models.
@@ -2634,6 +2637,8 @@ public void setMlwlKaKs(double mlwlKaKs) {
 	this.mlwlKaKs = mlwlKaKs;
 }
 
+// NW alignment
+// http://zhanglab.ccmb.med.umich.edu/NW-align/
 ////start new alignment
 	public void  NeedlemanWunsch(String f1,String f2, String nucf1, String nucf2, int gap_open,int gap_extn){
 		
