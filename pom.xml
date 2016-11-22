@@ -2,15 +2,15 @@
 	<modelVersion>4.0.0</modelVersion>
 	
 	<properties>
-		<bundle.symbolicName>org.cytoscape.sample-create-visual-style</bundle.symbolicName>
-		<bundle.namespace>org.cytoscape.sample.internal</bundle.namespace>
+		<bundle.symbolicName>orthoscape</bundle.symbolicName>
+		<bundle.namespace>orthoscape</bundle.namespace>
 		<cytoscape.api.version>3.0.0</cytoscape.api.version>
 		
 		<maven-bundle-plugin.version>2.3.4</maven-bundle-plugin.version>
 		<osgi.api.version>4.2.0</osgi.api.version>
 	</properties>
 
-	<groupId>org.cytoscape.orthoscape</groupId>
+	<groupId>orthoscape</groupId>
 	<packaging>bundle</packaging>
 	<version>1.0</version>
 	
@@ -82,11 +82,6 @@
 	<dependencies>
 		<dependency>
 			<groupId>org.cytoscape</groupId>
-			<artifactId>swing-application-api</artifactId>
-			<version>${cytoscape.api.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.cytoscape</groupId>
 			<artifactId>work-api</artifactId>
 			<version>${cytoscape.api.version}</version>
 		</dependency>
@@ -117,6 +112,10 @@
 			<groupId>org.cytoscape</groupId>
 			<artifactId>group-api</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>org.cytoscape</groupId>
+			<artifactId>swing-application-api</artifactId>
+		</dependency>
 	</dependencies>
 
 	<dependencyManagement>
@@ -140,6 +139,11 @@
 				<groupId>org.jfree</groupId>
 				<artifactId>jfreechart</artifactId>
 				<version>1.0.19</version>
+			</dependency>
+			<dependency>
+				<groupId>org.cytoscape</groupId>
+				<artifactId>swing-application-api</artifactId>
+				<version>${cytoscape.api.version}</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
