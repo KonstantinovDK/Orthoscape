@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.imageio.ImageIO;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -366,6 +367,17 @@ public class DrawStatisticsTask extends AbstractTask {
 	}	
 	
 	public void reportsCreating(){
+		PrintStream emptyStream = null;	// Empty stream to avoid potential problems with file creating
+		try{
+			emptyStream = new PrintStream(System.getProperty("java.io.tmpdir") + sep + "emptyStream.txt");
+		}catch (FileNotFoundException e1){
+			System.out.println("Can't create am empty stream in system's temp directory");
+			try{ // another try in local base directory
+				emptyStream = new PrintStream(mybasedirectory + sep + "errorsLog.txt");
+			}catch (FileNotFoundException e2){System.out.println("Can't create am empty stream in local base directory");}
+		}
+
+		
 		// Make the list of organisms only
         List<String> alotofuniqueorgs = new ArrayList<String>();
         for (int j=0; j<alotoforgs.size(); j++){
@@ -378,7 +390,10 @@ public class DrawStatisticsTask extends AbstractTask {
 	    	PrintStream globalHTML = null;
 			try {
 				globalHTML = new PrintStream(mybasedirectory + sep + "Output" + sep +"Pictures and reports" + sep + alotofuniqueorgs.get(z) + sep + "Global report.html");
-			} catch (FileNotFoundException e) {System.out.println("Can't create global html report");}
+			}catch (FileNotFoundException e) {
+				System.out.println("Can't create global html report");
+				globalHTML = emptyStream;
+			}
 			globalHTML.println(""+
 	    	"<html>" +
 			" <head>" +
@@ -465,7 +480,10 @@ public class DrawStatisticsTask extends AbstractTask {
 	    	PrintStream localHTML = null;
 			try {
 				localHTML = new PrintStream(mybasedirectory + sep + "Output" + sep + "Pictures and reports" + sep + alotoforgs.get(i) + sep + alotofnames.get(i) + sep + alotofnames.get(i) + " report.html");
-			} catch (FileNotFoundException e) {System.out.println("Can't create local report file");}
+			} catch (FileNotFoundException e) {
+				System.out.println("Can't create local html report");
+				localHTML = emptyStream;
+			}
 	    	
 	    	// It will be unique html for every pair (network, organism)
 			localHTML.println(""+
@@ -488,7 +506,10 @@ public class DrawStatisticsTask extends AbstractTask {
 	    	PrintStream Rscript = null;
 			try {
 				Rscript = new PrintStream(mybasedirectory + sep + "Output" + sep + "Pictures and reports" + sep + alotoforgs.get(i) + sep + alotofnames.get(i) + sep + alotofnames.get(i) + ".R");
-			} catch (FileNotFoundException e) {System.out.println("Can't create R script file");}
+			} catch (FileNotFoundException e) {
+				System.out.println("Can't create R script file");
+				Rscript = emptyStream;
+			}
 	    	Rscript.println("require(vioplot)");
 	    	int numOfSourceFiles = 0;
 	    	List<String> swList = new ArrayList<String>();
@@ -694,7 +715,7 @@ public class DrawStatisticsTask extends AbstractTask {
         	Rscript.println("\"SW=" + swList.get(numOfSourceFiles-1) + ";\n id=" + idList.get(numOfSourceFiles-1) + "%\")");
         	
         	Rscript.println("mycolors = c(8,12,19,31,33,43,48,53,57,62,63,66,76,84,86,91,101,102,109,116,3,259,401,404)");
-        	Rscript.println("plot(0,0,type=\"n\",xlim=c(0," + 3*(numOfSourceFiles+1) + "), ylim=c(0," + taxstorage.size() + "),  xaxt = 'n', xlab =\"tresholds\", ylab = \"PAI\",  main =\"PAI comparison\")");
+        	Rscript.println("plot(0,0,type=\"n\",xlim=c(0," + 3*(numOfSourceFiles+1) + "), ylim=c(0," + taxstorage.size() + "),  xaxt = 'n', xlab =\"thresholds\", ylab = \"PAI\",  main =\"PAI comparison\")");
         	if (numOfSourceFiles>23){
         		Rscript.println("for (i in 1:" + numOfSourceFiles + ") { vioplot(na.omit(allMasses[[i]]), rectCol=\"gray\", wex=3, at = 3*i, add = T, col = colours()[3*i+1]) }");	
         	}
@@ -718,9 +739,20 @@ public class DrawStatisticsTask extends AbstractTask {
 			"</html>");
     		localHTML.close();    	    
     	}
+   	    emptyStream.close();
 	}
 	
 	public void RreportsCreating(){
+		PrintStream emptyStream = null;	// Empty stream to avoid potential problems with file creating
+		try{
+			emptyStream = new PrintStream(System.getProperty("java.io.tmpdir") + sep + "emptyStream.txt");
+		}catch (FileNotFoundException e1){
+			System.out.println("Can't create am empty stream in system's temp directory");
+			try{ // another try in local base directory
+				emptyStream = new PrintStream(mybasedirectory + sep + "errorsLog.txt");
+			}catch (FileNotFoundException e2){System.out.println("Can't create am empty stream in local base directory");}
+		}
+		
 	    // Creating R global reports for every SW/identity pares									
         for (int z=0; z<uniqueRNames.size(); z++){
         	File dir = new File(mybasedirectory + sep + "Output" + sep + "Pictures and reports" + sep + uniqueOrgs.get(z) + sep + "R scripts" + sep);
@@ -730,7 +762,10 @@ public class DrawStatisticsTask extends AbstractTask {
 	    	PrintStream curIDSWreport = null;
 			try {
 				curIDSWreport = new PrintStream(mybasedirectory + sep + "Output" + sep + "Pictures and reports" + sep + uniqueOrgs.get(z) + sep + "R scripts" + sep + uniqueRNames.get(z));
-			} catch (FileNotFoundException e) {System.out.println("Can't create ID-SW unique R report");}
+			} catch (FileNotFoundException e) {
+				System.out.println("Can't create ID-SW unique R report");
+				curIDSWreport = emptyStream;
+			}
 	    	curIDSWreport.println("require(vioplot)");
 	    		    	
 	    	for (int mas=0; mas<Rmasses.get(z).size(); mas++){
@@ -750,7 +785,7 @@ public class DrawStatisticsTask extends AbstractTask {
         	curIDSWreport.println(Rlabels.get(z).get(Rlabels.get(z).size()-1) + ")");
         	
         	curIDSWreport.println("mycolors = c(8,12,19,31,33,43,48,53,57,62,63,66,76,84,86,91,101,102,109,116,3,259,401,404)");
-        	curIDSWreport.println("plot(0,0,type=\"n\",xlim=c(0," + 3*(Rmasses.get(z).size()+1) + "), ylim=c(0," + uniqueTaxes.get(z) + "),  xaxt = 'n', xlab =\"tresholds\", ylab = \"PAI\",  main =\"PAI comparison\")");
+        	curIDSWreport.println("plot(0,0,type=\"n\",xlim=c(0," + 3*(Rmasses.get(z).size()+1) + "), ylim=c(0," + uniqueTaxes.get(z) + "),  xaxt = 'n', xlab =\"thresholds\", ylab = \"PAI\",  main =\"PAI comparison\")");
         	if (Rmasses.get(z).size()>23){
         		curIDSWreport.println("for (i in 1:" + Rmasses.get(z).size() + ") { vioplot(na.omit(allMasses[[i]]), at = 3*i, add = T, col = colours()[3*i+1]) }");
         		}
@@ -759,6 +794,7 @@ public class DrawStatisticsTask extends AbstractTask {
         		}
         	curIDSWreport.println("axis(side=1,at=3*(1:" + Rmasses.get(z).size() + "),labels=allLabels)");
         	curIDSWreport.close();
-        }      
+        }   
+        emptyStream.close();
 	}
 }

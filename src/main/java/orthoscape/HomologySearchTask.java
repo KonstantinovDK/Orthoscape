@@ -6,12 +6,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.io.PrintWriter;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -495,7 +491,17 @@ public class HomologySearchTask extends AbstractTask {
     	itishappened(curURL);     
 	}
 	
-	void itishappened(String curURL){		
+	void itishappened(String curURL){
+		PrintStream emptyStream = null;	// Empty stream to avoid potential problems with file creating
+		try{
+			emptyStream = new PrintStream(System.getProperty("java.io.tmpdir") + sep + "emptyStream.txt");
+		}catch (FileNotFoundException e1){
+			System.out.println("Can't create am empty stream in system's temp directory");
+			try{ // another try in local base directory
+				emptyStream = new PrintStream(mybasedirectory + sep + "errorsLog.txt");
+			}catch (FileNotFoundException e2){System.out.println("Can't create am empty stream in local base directory");}
+		}
+		
  		// If same node was analyzed then we just copy group value
     	int groupdone = 0;
     	for (int globali=0; globali<totalnames.size()-1; globali++){
@@ -744,18 +750,23 @@ public class HomologySearchTask extends AbstractTask {
 				    else{
 				    	outdomain = new PrintStream(mybasedirectory + sep + "Output" + sep +"OrthologDomains" + sep + tempcurOrgName + ".txt");
 				    }
-				    outdomain.println("Gene domains:");	    			    		
-		    		for (int cou = 0; cou < curGeneDomens.size(); cou++){   			   		    	    	
-		    			outdomain.println(curGeneDomens.get(cou));   	
-		    		}
-		    		outdomain.println();
-				    if (homologyType == "Paralogs search"){
-				    	outdomain.println("Paralog domains:");
-				    }
-				    else{
-				    	outdomain.println("Ortholog domains:");
-				    }
-	 	   		}catch (FileNotFoundException e){System.out.println("Can't create output domains file");}
+	 	   		}catch (FileNotFoundException e){
+	 	   			System.out.println("Can't create output domains file");
+	 	   			outdomain = emptyStream;
+	 	   		}
+	 	   		
+			    outdomain.println("Gene domains:");	    			    		
+	    		for (int cou = 0; cou < curGeneDomens.size(); cou++){   			   		    	    	
+	    			outdomain.println(curGeneDomens.get(cou));   	
+	    		}
+	    		outdomain.println();
+			    if (homologyType == "Paralogs search"){
+			    	outdomain.println("Paralog domains:");
+			    }
+			    else{
+			    	outdomain.println("Ortholog domains:");
+			    }
+	 	   		
 	    		    		   
 		 	    List<Entry<String,Integer>> orthologDomensSorted = new ArrayList<Entry<String,Integer>>(orthologDomens.entrySet());
 		 		Collections.sort(orthologDomensSorted, new Comparator<Entry<String,Integer>>() {		
@@ -894,6 +905,7 @@ public class HomologySearchTask extends AbstractTask {
    	            }
    	        }
    	    }
+    	emptyStream.close();
      }	
 	
 	// Writing the results into Cytoscape table

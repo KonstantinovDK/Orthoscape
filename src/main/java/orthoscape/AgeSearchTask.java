@@ -60,6 +60,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	double equality;				// identity value (homologs with lower value will be rejected)
 	int SWScore;					// Smith-Waterman score (homologs with lower value will be rejected)
 	File mybasedirectory;			// local base directory
+	static File mypamldirectory;
 	String sep = File.separator;	// directory separator in current operating system
 	
 	Boolean inputmark;				// mark to create local storage base
@@ -76,7 +77,8 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	
 	int taxonomyDistance;			// Maximum difference on taxonomic tree. DI threshold
 	
-	Boolean DImark;					// mark to turn on DI analysis (Niedlmann-Wunsh + KaKs calculator)
+	Boolean Kaksmark;				// mark to turn on DI analysis (Niedlmann-Wunsh + KaKs calculator)
+	Boolean Pamlmark;				// mark to turn on DI analysis (Niedlmann-Wunsh + PAML)
 	String organismAminoSequence;	// Aminoacid sequence of gene from network
 	String orthologAminoSequence;	// Aminoacid sequence of current ortholog
 	
@@ -91,14 +93,23 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	
 	Boolean bigGenemark;			// mark to (DI)analyze genes with aminoacid sequence length > 7000 
 	
-	Double[] DISumm;				// current DI values of every node
-	Double[] DISummx2;				// current DI*DI values of every node
-	Integer[] KsEmpty;				// number of pairs (gene-ortholog) with "infinity" returned by KaKs 
+	Double[] kaksSumm;				// current DI values of every node
+	Double[] kaksSummx2;			// current DI*DI values of every node
+	Integer[] kaksEmpty;			// number of pairs (gene-ortholog) with "infinity" returned by KaKs 
+	
+	Double[] pamlSumm;				// current DI values of every node
+	Double[] pamlSummx2;			// current DI*DI values of every node
+	Integer[] pamlEmpty;			// number of pairs (gene-ortholog) with "infinity" returned by KaKs 
 	
 	ArrayList<ArrayList<String>> geneorgTable;
 	ArrayList<String> geneRow;
 	ArrayList<String> orgColumn;
 
+	// PAML fields
+	private double LWL85value;
+	private double LWL85mvalue;
+	private double LPB93value;
+	
 	// Kaks calculator's fields
 	// NG - Method variables.
 	private double ngKa;
@@ -226,19 +237,22 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 		JLabel DIlabels = new JLabel("Next otpions affect the divergency index analyses only.");
 		DIlabels.setAlignmentX(Component.LEFT_ALIGNMENT);
 		
-		JCheckBox DIbaseBox = new JCheckBox();
+		JCheckBox KaksBox = new JCheckBox();
+		JCheckBox PamlBox = new JCheckBox();
 		JPanel DIBoxPanel = new JPanel();
 		DIBoxPanel.setLayout(new BoxLayout(DIBoxPanel, BoxLayout.X_AXIS));
 		DIBoxPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-		DIBoxPanel.add(DIbaseBox);
-		DIBoxPanel.add(new JLabel(" check it to count divergency index."));
+		DIBoxPanel.add(KaksBox);
+		DIBoxPanel.add(new JLabel(" check it to count divergency index by KaKs Calculator   "));
+		DIBoxPanel.add(PamlBox);
+		DIBoxPanel.add(new JLabel(" check it to count divergency index by Paml (requires PAML installed)."));
 		
 		JPanel taxonomyDistanceBoxPanel = new JPanel();
 		taxonomyDistanceBoxPanel.setLayout(new BoxLayout(taxonomyDistanceBoxPanel, BoxLayout.X_AXIS));
 		taxonomyDistanceBoxPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 		taxonomyDistanceBoxPanel.add(new JLabel("Put the acceptable taxonomy distance: "));
 		
-		base = "1";
+		base = "2";
 		distanceField.setValue(base.trim());
 		taxonomyDistanceBoxPanel.add(distanceField);
 		
@@ -317,14 +331,15 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 		this.taxonomyDistance = Integer.parseInt(distanceField.getText().trim());
 		
 		this.outputmark = storagebaseBox.isSelected();
-		this.DImark = DIbaseBox.isSelected();
+		this.Kaksmark = KaksBox.isSelected();
+		this.Pamlmark = PamlBox.isSelected();
 		
 		this.speciesmark = DIspeciesBox.isSelected();
 		this.domenmark = domensBox.isSelected();
 		
 		this.bigGenemark = bigGeneBox.isSelected();
 		
-		if (this.inputmark || this.outputmark || this.DImark){
+		if (this.inputmark || this.outputmark){
 			// Form to choose the base
 			JFrame myframe = new JFrame();
 			JFileChooser dialog = new JFileChooser();
@@ -371,7 +386,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 			    }
 			    
 			    // Directories creating
-			    if (this.DImark){
+			    if (this.Kaksmark || this.Pamlmark){
 					dir = new File(mybasedirectory + sep + "Input" + sep + "GeneSequenceBase" + sep);
 					if (!dir.isDirectory()){
 						dir.mkdir();
@@ -382,10 +397,40 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 						dir.mkdir();
 					}
 					
-				    dir = new File(mybasedirectory + sep + "Input" + sep + "DIBase" + sep);
-				    if (!dir.isDirectory()){
-				    	dir.mkdir();
-				    }
+					if (this.Kaksmark){
+					    dir = new File(mybasedirectory + sep + "Input" + sep + "KaksBase" + sep);
+					    if (!dir.isDirectory()){
+					    	dir.mkdir();
+					    }
+					}
+					if (this.Pamlmark){
+					    dir = new File(mybasedirectory + sep + "Input" + sep + "PamlBase" + sep);
+					    if (!dir.isDirectory()){
+					    	dir.mkdir();
+					    }
+					}
+			    }
+			    if (Pamlmark){
+					JFrame myframe2 = new JFrame();
+					JFileChooser dialog2 = new JFileChooser();
+					dialog2.setDialogTitle("Choose PAML directory");
+					dialog2.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+					dialog2.setAcceptAllFileFilterUsed(false); 
+					int returnValue2 = dialog2.showOpenDialog(myframe2);
+					
+					if (returnValue2 == javax.swing.JFileChooser.APPROVE_OPTION){
+						mypamldirectory = dialog2.getSelectedFile();
+						dialog2.setVisible(true);
+						
+						File mydir = new File(mypamldirectory + sep);
+					    if (!mydir.isDirectory()){
+					    	System.exit(1);
+					    }	
+					}
+					else{
+						System.out.println("Cancelled");
+						System.exit(0);
+					}
 			    }
 
 	        }
@@ -414,16 +459,24 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 				}
 				
 				// Directories creating
-			    if (this.DImark){
-			    	 dir = new File(mybasedirectory + sep + "Output" + sep +"KaKs" + sep);
-				     if (!dir.isDirectory()){
-				    	 dir.mkdir();
-				     }	
+				if (this.Kaksmark || this.Pamlmark){
+					if (this.Kaksmark){
+					    dir = new File(mybasedirectory + sep + "Output" + sep + "KaksBase" + sep);
+					    if (!dir.isDirectory()){
+					    	dir.mkdir();
+					    }
+					}
+					if (this.Pamlmark){
+					    dir = new File(mybasedirectory + sep + "Output" + sep + "PamlBase" + sep);
+					    if (!dir.isDirectory()){
+					    	dir.mkdir();
+					    }
+					}
 				     
-			    	 dir = new File(mybasedirectory + sep + "Output" + sep + "AlignedSequences" + sep);
-				     if (!dir.isDirectory()){
-				    	 dir.mkdir();
-				     }	
+			    	dir = new File(mybasedirectory + sep + "Output" + sep + "AlignedSequences" + sep);
+				    if (!dir.isDirectory()){
+				    	dir.mkdir();
+				    }	
 			    }
 	        }
 
@@ -480,123 +533,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 		orgColumn = new ArrayList<String>();
 		geneorgTable = new ArrayList<ArrayList<String>>();
 				
-		// KaKs fields
-		// NSX Map
-		nsxMap = new HashMap<String, String>();
-		nsxMap.put(ApplicationConstants.PHENYLALANINE, "NNX");
-		nsxMap.put(LEUCINE, "XNX");
-		nsxMap.put(ISOLEUCINE, "NNX");
-		nsxMap.put(METHIONINE, "NNN");
-		nsxMap.put(VALINE, "NNS");
-		nsxMap.put(SERINE1, "NNS");
-		nsxMap.put(SERINE2, "XNX");
-		nsxMap.put(PROLINE, "NNS");
-		nsxMap.put(THREONINE, "NNS");
-		nsxMap.put(ALANINE, "NNS");
-		nsxMap.put(TYROSINE, "NNX");
-		nsxMap.put(STOP_CODON, "NXX");
-		nsxMap.put(HISTIDINE, "NNX");
-		nsxMap.put(GLUTAMINE, "NNX");
-		nsxMap.put(ASPARAGINE, "NNX");
-		nsxMap.put(LYSINE, "NNX");
-		nsxMap.put(ASPARTIC_ACID, "NNX");
-		nsxMap.put(GLUTAMIC_ACID, "NNX");
-		nsxMap.put(CYSTEINE, "NNX");
-		nsxMap.put(TRYPTOPHAN, "NNN");
-		nsxMap.put(ARGININE, "XNX");
-		nsxMap.put(GLYCINE, "NNS");
-
-		// Amino acid Map
-		aminoMap = new HashMap<String, String>();
-		aminoMap.put("UUU", PHENYLALANINE);
-		aminoMap.put("UUC", PHENYLALANINE);
-		aminoMap.put("UUA", LEUCINE);
-		aminoMap.put("UUG", LEUCINE);
-		aminoMap.put("CUU", LEUCINE);
-		aminoMap.put("CUC", LEUCINE);
-		aminoMap.put("CUA", LEUCINE);
-		aminoMap.put("CUG", LEUCINE);
-		aminoMap.put("AUU", ISOLEUCINE);
-		aminoMap.put("AUC", ISOLEUCINE);
-		aminoMap.put("AUA", ISOLEUCINE);
-		aminoMap.put("AUG", METHIONINE);
-		aminoMap.put("GUU", VALINE);
-		aminoMap.put("GUC", VALINE);
-		aminoMap.put("GUA", VALINE);
-		aminoMap.put("GUG", VALINE);
-		aminoMap.put("UCU", SERINE1);
-		aminoMap.put("UCC", SERINE1);
-		aminoMap.put("UCA", SERINE1);
-		aminoMap.put("UCG", SERINE1);
-		aminoMap.put("CCU", PROLINE);
-		aminoMap.put("CCC", PROLINE);
-		aminoMap.put("CCA", PROLINE);
-		aminoMap.put("CCG", PROLINE);
-		aminoMap.put("ACU", THREONINE);
-		aminoMap.put("ACC", THREONINE);
-		aminoMap.put("ACA", THREONINE);
-		aminoMap.put("ACG", THREONINE);
-		aminoMap.put("GCU", ALANINE);
-		aminoMap.put("GCC", ALANINE);
-		aminoMap.put("GCA", ALANINE);
-		aminoMap.put("GCG", ALANINE);
-		aminoMap.put("UAU", TYROSINE);
-		aminoMap.put("UAC", TYROSINE);
-		aminoMap.put("UAA", STOP_CODON);
-		aminoMap.put("UAG", STOP_CODON);
-		aminoMap.put("UGA", STOP_CODON);
-		aminoMap.put("CAU", HISTIDINE);
-		aminoMap.put("CAC", HISTIDINE);
-		aminoMap.put("CAA", GLUTAMINE);
-		aminoMap.put("CAG", GLUTAMINE);
-		aminoMap.put("AAU", ASPARAGINE);
-		aminoMap.put("AAC", ASPARAGINE);
-		aminoMap.put("AAA", LYSINE);
-		aminoMap.put("AAG", LYSINE);
-		aminoMap.put("GAU", ASPARTIC_ACID);
-		aminoMap.put("GAC", ASPARTIC_ACID);
-		aminoMap.put("GAA", GLUTAMIC_ACID);
-		aminoMap.put("GAG", GLUTAMIC_ACID);
-		aminoMap.put("UGU", CYSTEINE);
-		aminoMap.put("UGC", CYSTEINE);
-		aminoMap.put("UGG", TRYPTOPHAN);
-		aminoMap.put("CGU", ARGININE);
-		aminoMap.put("CGC", ARGININE);
-		aminoMap.put("CGA", ARGININE);
-		aminoMap.put("CGG", ARGININE);
-		aminoMap.put("AGU", SERINE2);
-		aminoMap.put("AGC", SERINE2);
-		aminoMap.put("AGA", ARGININE);
-		aminoMap.put("AGG", ARGININE);
-		aminoMap.put("GGU", GLYCINE);
-		aminoMap.put("GGC", GLYCINE);
-		aminoMap.put("GGA", GLYCINE);
-		aminoMap.put("GGG", GLYCINE);
-
-		// Codon Degree Map
-		codonDegreeMap = new HashMap<String, String>();
-		codonDegreeMap.put(PHENYLALANINE, "002");
-		codonDegreeMap.put(LEUCINE, "204");
-		codonDegreeMap.put(ISOLEUCINE, "002");
-		codonDegreeMap.put(METHIONINE, "000");
-		codonDegreeMap.put(VALINE, "004");
-		codonDegreeMap.put(SERINE1, "004");
-		codonDegreeMap.put(SERINE2, "004");
-		codonDegreeMap.put(PROLINE, "004");
-		codonDegreeMap.put(THREONINE, "004");
-		codonDegreeMap.put(ALANINE, "004");
-		codonDegreeMap.put(TYROSINE, "002");
-		codonDegreeMap.put(STOP_CODON, "022");
-		codonDegreeMap.put(HISTIDINE, "002");
-		codonDegreeMap.put(GLUTAMINE, "002");
-		codonDegreeMap.put(ASPARAGINE, "002");
-		codonDegreeMap.put(LYSINE, "002");
-		codonDegreeMap.put(ASPARTIC_ACID, "002");
-		codonDegreeMap.put(GLUTAMIC_ACID, "002");
-		codonDegreeMap.put(CYSTEINE, "002");
-		codonDegreeMap.put(TRYPTOPHAN, "000");
-		codonDegreeMap.put(ARGININE, "204");
-		codonDegreeMap.put(GLYCINE, "004");			
+		kaksMapsInitialization();	
 	}
 	
 	public void run(TaskMonitor monitor) {
@@ -632,21 +569,38 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 		}	
 		
 		// Field to put DI data into Cytoscape node table after analysis performed.	
-		if (this.DImark){
-			if(nodeTable.getColumn("DI Average")!= null){
-				nodeTable.deleteColumn("DI Average");	
-				nodeTable.createColumn("DI Average", Double.class, false);
+		if (this.Kaksmark){
+			if(nodeTable.getColumn("KaKs Average")!= null){
+				nodeTable.deleteColumn("KaKs Average");	
+				nodeTable.createColumn("KaKs Average", Double.class, false);
 			}
 			else {
-				nodeTable.createColumn("DI Average", Double.class, false);
+				nodeTable.createColumn("KaKs Average", Double.class, false);
 			}
 			
-			if(nodeTable.getColumn("DI Variance")!= null){
-				nodeTable.deleteColumn("DI Variance");	
-				nodeTable.createColumn("DI Variance", Double.class, false);
+			if(nodeTable.getColumn("KaKs Variance")!= null){
+				nodeTable.deleteColumn("KaKs Variance");	
+				nodeTable.createColumn("KaKs Variance", Double.class, false);
 			}
 			else {
-				nodeTable.createColumn("DI Variance", Double.class, false);
+				nodeTable.createColumn("KaKs Variance", Double.class, false);
+			}	
+		}
+		if (this.Pamlmark){
+			if(nodeTable.getColumn("PAML Average")!= null){
+				nodeTable.deleteColumn("PAML Average");	
+				nodeTable.createColumn("PAML Average", Double.class, false);
+			}
+			else {
+				nodeTable.createColumn("PAML Average", Double.class, false);
+			}
+			
+			if(nodeTable.getColumn("PAML Variance")!= null){
+				nodeTable.deleteColumn("PAML Variance");	
+				nodeTable.createColumn("PAML Variance", Double.class, false);
+			}
+			else {
+				nodeTable.createColumn("PAML Variance", Double.class, false);
 			}	
 		}
 			
@@ -656,66 +610,59 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
  			
  		this.allAges = new String[nodeTable.getRowCount()];		
  		this.allAgesPower = new int[nodeTable.getRowCount()];
- 		this.DISumm = new Double[nodeTable.getRowCount()];	
- 		this.DISummx2 = new Double[nodeTable.getRowCount()];	
- 		this.KsEmpty = new Integer[nodeTable.getRowCount()];	 		
+ 		
+ 		this.kaksSumm = new Double[nodeTable.getRowCount()];	
+ 		this.kaksSummx2 = new Double[nodeTable.getRowCount()];	
+ 		this.kaksEmpty = new Integer[nodeTable.getRowCount()]; 
+ 		
+ 		this.pamlSumm = new Double[nodeTable.getRowCount()];	
+ 		this.pamlSummx2 = new Double[nodeTable.getRowCount()];	
+ 		this.pamlEmpty = new Integer[nodeTable.getRowCount()]; 
  		
 		for (int i=0; i < nodeTable.getRowCount(); i++){						
 		    CyRow nodeRow = nodeTable.getRow(suidstorage.get(i)); 
 		    nodeRow.set("Node Degree", 0);
+		    
+			allAgesPower[i] = 0;
+    		kaksSumm[i] = 0d;
+    		kaksSummx2[i] = 0d;
+    		kaksEmpty[i] = 0;
+    		
+    		pamlSumm[i] = 0d;
+    		pamlSummx2[i] = 0d;
+    		pamlEmpty[i] = 0;
 		    
 			// Check if the network is BioPax
 			if(nodeTable.getColumn("NCBI GENE") != null){
 				// Network is BioPax. We will ignore everything except genes
 				if (nodeRow.get("NCBI GENE", String.class) == null){
 		    		allAges[i] = "It's a path";
-		    		allAgesPower[i] = 0;
-		    		DISumm[i] = 0d;
-		    		DISummx2[i] = 0d;
-		    		KsEmpty[i] = 0;
 					continue;
 				}
 			}
 		    
 		    String namedata = nodeRow.get("name", String.class);
-
 	    	if (namedata.contains("path:")){
 	    		allAges[i] = "It's a path";
 	    		allAgesPower[i] = 0;
-	    		DISumm[i] = 0d;
-	    		DISummx2[i] = 0d;
-	    		KsEmpty[i] = 0;
 	    		continue;
 	    	}		    	    	    	
 	    	if( (namedata.contains("cpd:") || (namedata.contains("gl:")) || (namedata.contains("dr:")) )){		        
 	    		allAges[i] = "It's a compound";
 	    		allAgesPower[i] = 0;
-	    		DISumm[i] = 0d;
-	    		DISummx2[i] = 0d;
-	    		KsEmpty[i] = 0;
 	    		continue;
 	    	}
 	    	if(namedata.contains("ko:")){		        
 	    		allAges[i] = "It's Kegg own orthologous group";
 	    		allAgesPower[i] = 0;
-	    		DISumm[i] = 0d;
-	    		DISummx2[i] = 0d;
-	    		KsEmpty[i] = 0;
 	    		continue;
 	    	}
 	    	if(namedata.contains(":ko")){		        
 	    		allAges[i] = "No data";
 	    		allAgesPower[i] = 0;
-	    		DISumm[i] = 0d;
-	    		DISummx2[i] = 0d;
-	    		KsEmpty[i] = 0;
 	    		continue;
 	    	}
 	    	
-	    	allAgesPower[i] = 0;
-	    	DISumm[i] = 0.d;
-	 		DISummx2[i] = 0.d;
-	 		KsEmpty[i] = 0;
 		    List<String> v_namedata = new ArrayList<String>(); 
 		    
 		    // Here we separate all genes from one node
@@ -848,14 +795,24 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	       	}
 	       	nodeRow.set("PAI Power", allAgesPower[i]);
 	       	totalOrthologs += allAgesPower[i];       	
-	       	if (this.DImark){
+	       	if (this.Kaksmark){
 		       	if (allAgesPower[i] == 0){
-		       		nodeRow.set("DI Average", 0.d);
-		       		nodeRow.set("DI Variance", 0.d);
+		       		nodeRow.set("KaKs Average", 0.d);
+		       		nodeRow.set("KaKs Variance", 0.d);
 		       	}
 		       	else{
-		       		nodeRow.set("DI Average", DISumm[i]/(allAgesPower[i]-KsEmpty[i]));
-		       		nodeRow.set("DI Variance", (DISummx2[i] - DISumm[i]*DISumm[i]/(allAgesPower[i]-KsEmpty[i]))/(allAgesPower[i]-KsEmpty[i]));
+		       		nodeRow.set("KaKs Average", kaksSumm[i]/(allAgesPower[i]-kaksEmpty[i]));
+		       		nodeRow.set("KaKs Variance", (kaksSummx2[i] - kaksSumm[i]*kaksSumm[i]/(allAgesPower[i]-kaksEmpty[i]))/(allAgesPower[i]-kaksEmpty[i]));
+		       	}
+	       	}
+	       	if (this.Pamlmark){
+		       	if (allAgesPower[i] == 0){
+		       		nodeRow.set("PAML Average", 0.d);
+		       		nodeRow.set("PAML Variance", 0.d);
+		       	}
+		       	else{
+		       		nodeRow.set("PAML Average", pamlSumm[i]/(allAgesPower[i]-pamlEmpty[i]));
+		       		nodeRow.set("PAML Variance", (pamlSummx2[i] - pamlSumm[i]*pamlSumm[i]/(allAgesPower[i]-pamlEmpty[i]))/(allAgesPower[i]-pamlEmpty[i]));
 		       	}
 	       	}
 	    }
@@ -867,6 +824,15 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	}
 	
 	private void printTaxonomy(int totalOrthologs, int totalGenes, int totalEdges){
+		PrintStream emptyStream = null;	// Empty stream to avoid potential problems with file creating
+		try{
+			emptyStream = new PrintStream(System.getProperty("java.io.tmpdir") + sep + "emptyStream.txt");
+		}catch (FileNotFoundException e1){
+			System.out.println("Can't create am empty stream in system's temp directory");
+			try{ // another try in local base directory
+				emptyStream = new PrintStream(mybasedirectory + sep + "errorsLog.txt");
+			}catch (FileNotFoundException e2){System.out.println("Can't create am empty stream in local base directory");}
+		}	
 	          
 		Map<String, Integer> myTaxonomy = new HashMap<String, Integer>();
 		myTaxonomy.put("It's a path", 0);
@@ -895,6 +861,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 		taxesWeight.put("It's a compound", 0);
 		taxesWeight.put("It's Kegg own orthologous group", 0);	
 		taxesWeight.put("No data", 0);
+		
  		CyColumn mysuidcolumn = nodeTable.getColumn("SUID");
  		List<Long> suidstorage;		
  		suidstorage = mysuidcolumn.getValues(Long.class);
@@ -1009,7 +976,10 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 			sourceFile = new PrintStream(mybasedirectory + sep + "Output" + sep
 			+ "Pictures and reports" + sep + orgstorage.get(0) + sep + netName + sep
 			+ netName + "___source___identity=" + stridentity + "___SW-Score=" + strSW + ".txt");
-		}catch (FileNotFoundException e4){System.out.println("Can't create a source file");}
+		}catch (FileNotFoundException e4){
+			System.out.println("Can't create a source file");
+			sourceFile = emptyStream;
+		}
 		
 		sourceFile.println(myTaxonomy.get("00_Cellular Organisms"));
 		for (int t=0; t<=alltaxes.length-1; t++){
@@ -1031,7 +1001,10 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 			tableFile = new PrintStream(mybasedirectory + sep + "Output" + sep
 			+ "Pictures and reports" + sep + orgstorage.get(0) + sep + netName + sep
 			+ netName + "___table___identity=" + stridentity + "___SW-Score=" + strSW + ".txt");
-		}catch (FileNotFoundException e4){System.out.println("Can't create a table file");}
+		}catch (FileNotFoundException e4){
+			System.out.println("Can't create a table file");
+			tableFile = emptyStream;
+		}
 		
 		tableFile.print("       ");
 		for (int it=0; it<geneRow.size(); it++){
@@ -1094,63 +1067,19 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 			+ netName + "___graphic___identity=" + stridentity + "___SW-Score=" + strSW + ".PNG"));
 		}catch (IOException e3){System.out.println("Can't create a distribution image");}
         
-        // Gene - DI table.
-        if (this.DImark){
-        	PrintStream outDI = null;
-        	try{
-        		outDI = new PrintStream(deseaseDir + sep 
-        		+ netName + "___DI___identity=" + stridentity + "___SW-Score=" + strSW + ".txt");
-        	}catch (FileNotFoundException e) {System.out.println("Can't create DI file");}
-			
-	    	Map<String, Double> unsortedDIdata = new HashMap<String, Double>(); 
-	    	
-	        for (int i=0; i<suidstorage.size(); i++){
-	 		    CyRow nameRow = nodeTable.getRow(suidstorage.get(i)); 
-	   		    String namedata = nameRow.get("name", String.class);
-	   		    
-	   		    if ((// BioPax
-	   		    		(nodeTable.getColumn("NCBI GENE") != null) && (nameRow.get("NCBI GENE", String.class) == null)
-	   		    	)	
-	   		    		||
-	   		    	(// KEGG																									
-	   		    	namedata.contains("path:") ||
-	   			    namedata.contains("cpd:")  || 
-	   			    namedata.contains("gl:")   ||
-	   			    namedata.contains("dr:")   ||
-	   			    namedata.contains("ko:")   ||
-	   			    namedata.contains(":null")
-	   			    )){ 		    	
-	   		    	continue;
-	   		    }
-	   		    
-	   		    Double DIdata = nameRow.get("DI Average", Double.class);
-	   		    
-	   		    unsortedDIdata.put(namedata, DIdata);
-	 		}		
-	           
-		    List<Entry<String,Double>> sortedDIdata = new ArrayList<Entry<String,Double>>(unsortedDIdata.entrySet());
-			Collections.sort(sortedDIdata, new Comparator<Entry<String,Double>>() {		
-				public int compare(Entry<String,Double> e1, Entry<String,Double> e2) {
-					return e2.getValue().compareTo(e1.getValue());
-				}   		 
-			});
-	        	   
-			for (int cou = 0; cou < sortedDIdata.size(); cou++){			 		 
-				outDI.print(sortedDIdata.get(cou).getKey());
-				outDI.print("\t");
-				outDI.println(sortedDIdata.get(cou).getValue());	
-			}	   
-			outDI.close();
-        }
-		
+        
+        
         // Gene - PAI table.
         PrintStream outPAI = null;
 		try{
 			outPAI = new PrintStream(deseaseDir + sep
 			+ netName + "___PAI___identity=" + stridentity + "___SW-Score=" + strSW + ".txt");
-		}catch (FileNotFoundException e) {System.out.println("Can't create PAI file");}
+		}catch (FileNotFoundException e) {
+			System.out.println("Can't create PAI file");
+			outPAI = emptyStream;
+		}
 		
-    	Map<String, String> unsortedDIdata = new HashMap<String, String>(); 
+    	Map<String, String> unsortedPAIdata = new HashMap<String, String>(); 
     	
         for (int i=0; i<suidstorage.size(); i++){
  		    CyRow nameRow = nodeTable.getRow(suidstorage.get(i)); 
@@ -1173,26 +1102,145 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
    		    
    		    String PAIdata = nameRow.get("PAI", String.class);
    		    
-   		    unsortedDIdata.put(namedata, PAIdata);
+   		    unsortedPAIdata.put(namedata, PAIdata);
  		}		
 
-	    List<Entry<String,String>> sortedDIdata = new ArrayList<Entry<String,String>>(unsortedDIdata.entrySet());
-		Collections.sort(sortedDIdata, new Comparator<Entry<String,String>>() {		
+	    List<Entry<String,String>> sortedPAIdata = new ArrayList<Entry<String,String>>(unsortedPAIdata.entrySet());
+		Collections.sort(sortedPAIdata, new Comparator<Entry<String,String>>() {		
 			public int compare(Entry<String,String> e1, Entry<String,String> e2) {
 				return e2.getValue().compareTo(e1.getValue());
 			}   		 
 		});
         	   
-		for (int cou = 0; cou < sortedDIdata.size(); cou++){			 		 
-			outPAI.print(sortedDIdata.get(cou).getKey());
+		for (int cou = 0; cou < sortedPAIdata.size(); cou++){			 		 
+			outPAI.print(sortedPAIdata.get(cou).getKey());
 			outPAI.print("\t");
-			outPAI.println(sortedDIdata.get(cou).getValue());	
+			outPAI.println(sortedPAIdata.get(cou).getValue());	
 		}	   
 		outPAI.close();
+        
+        // Gene - DI table.
+        if (this.Kaksmark){
+        	PrintStream outDI = null;
+        	try{
+        		outDI = new PrintStream(deseaseDir + sep 
+        		+ netName + "___KaksDI___identity=" + stridentity + "___SW-Score=" + strSW + ".txt");
+        	}catch (FileNotFoundException e) {
+        		System.out.println("Can't create DI file");
+        		outDI = emptyStream;
+        	}
+			
+	    	Map<String, Double> unsortedDIdata = new HashMap<String, Double>(); 
+	    	
+	        for (int i=0; i<suidstorage.size(); i++){
+	 		    CyRow nameRow = nodeTable.getRow(suidstorage.get(i)); 
+	   		    String namedata = nameRow.get("name", String.class);
+	   		    
+	   		    if ((// BioPax
+	   		    		(nodeTable.getColumn("NCBI GENE") != null) && (nameRow.get("NCBI GENE", String.class) == null)
+	   		    	)	
+	   		    		||
+	   		    	(// KEGG																									
+	   		    	namedata.contains("path:") ||
+	   			    namedata.contains("cpd:")  || 
+	   			    namedata.contains("gl:")   ||
+	   			    namedata.contains("dr:")   ||
+	   			    namedata.contains("ko:")   ||
+	   			    namedata.contains(":null")
+	   			    )){ 		    	
+	   		    	continue;
+	   		    }
+	   		    
+	   		    Double DIdata = nameRow.get("KaKs Average", Double.class);	   		    
+	   		    unsortedDIdata.put(namedata, DIdata);
+	 		}		
+	           
+		    List<Entry<String,Double>> sortedDIdata = new ArrayList<Entry<String,Double>>(unsortedDIdata.entrySet());
+			Collections.sort(sortedDIdata, new Comparator<Entry<String,Double>>() {		
+				public int compare(Entry<String,Double> e1, Entry<String,Double> e2) {
+					return e2.getValue().compareTo(e1.getValue());
+				}   		 
+			});
+	        	   
+			for (int cou = 0; cou < sortedDIdata.size(); cou++){			 		 
+				outDI.print(sortedDIdata.get(cou).getKey());
+				outDI.print("\t");
+				outDI.println(sortedDIdata.get(cou).getValue());	
+			}	   
+			outDI.close();
+        }
+        
+        if (this.Pamlmark){
+        	PrintStream outDI = null;
+        	try{
+        		outDI = new PrintStream(deseaseDir + sep 
+        		+ netName + "___PamlDI___identity=" + stridentity + "___SW-Score=" + strSW + ".txt");
+        	}catch (FileNotFoundException e) {
+        		System.out.println("Can't create DI file");
+        		outDI = emptyStream;
+        	}
+			
+	    	Map<String, Double> unsortedDIdata = new HashMap<String, Double>(); 
+	    	
+	        for (int i=0; i<suidstorage.size(); i++){
+	 		    CyRow nameRow = nodeTable.getRow(suidstorage.get(i)); 
+	   		    String namedata = nameRow.get("name", String.class);
+	   		    
+	   		    if ((// BioPax
+	   		    		(nodeTable.getColumn("NCBI GENE") != null) && (nameRow.get("NCBI GENE", String.class) == null)
+	   		    	)	
+	   		    		||
+	   		    	(// KEGG																									
+	   		    	namedata.contains("path:") ||
+	   			    namedata.contains("cpd:")  || 
+	   			    namedata.contains("gl:")   ||
+	   			    namedata.contains("dr:")   ||
+	   			    namedata.contains("ko:")   ||
+	   			    namedata.contains(":null")
+	   			    )){ 		    	
+	   		    	continue;
+	   		    }
+	   		    
+	   		    Double DIdata = nameRow.get("PAML Average", Double.class);	   		    
+	   		    unsortedDIdata.put(namedata, DIdata);
+	 		}		
+	           
+	        List<Entry<String,Double>> sortedDIdata = new ArrayList<Entry<String,Double>>(unsortedDIdata.entrySet());
+			Collections.sort(sortedDIdata, new Comparator<Entry<String,Double>>() {		
+				public int compare(Entry<String,Double> e1, Entry<String,Double> e2) {
+					return e2.getValue().compareTo(e1.getValue());
+				}   		 
+			});
+	        	   
+			for (int cou = 0; cou < sortedDIdata.size(); cou++){			 		 
+				outDI.print(sortedDIdata.get(cou).getKey());
+				outDI.print("\t");
+				outDI.println(sortedDIdata.get(cou).getValue());	
+			}	   
+			outDI.close();
+        }
+		
+       
+		emptyStream.close();
 	}
 		
 	// Work with orthologs list and taxonomy analysis.
 	void itishappened(String curURL, int rowCounter, String curName){
+		PrintStream logStream = null;
+		try {
+			logStream = new PrintStream(mybasedirectory + sep + "log.txt");
+		}catch (FileNotFoundException e1){System.out.println("Can't create am empty stream");}	
+			
+		logStream.println("here1");	
+		PrintStream emptyStream = null;	// Empty stream to avoid potential problems with file creating
+		try{
+			emptyStream = new PrintStream(System.getProperty("java.io.tmpdir") + sep + "emptyStream.txt");
+		}catch (FileNotFoundException e1){
+			System.out.println("Can't create am empty stream in system's temp directory");
+			try{ // another try in local base directory
+				emptyStream = new PrintStream(mybasedirectory + sep + "errorsLog.txt");
+			}catch (FileNotFoundException e2){System.out.println("Can't create am empty stream in local base directory");}
+		}	
 
 		// Some data about taxonomic rows
 		PrintStream curTaxOut = null;
@@ -1200,7 +1248,10 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 			String parsedname = curName.replace(':', '_');
 			try {  	
 				curTaxOut = new PrintStream(mybasedirectory + sep + "Output" + sep + "Full ages data" + sep + parsedname + ".txt");
-			}catch (IOException e2){ e2.printStackTrace(); } 
+			}catch (IOException e2){
+				System.out.println("Can't create complete taxonomic data file for " + parsedname);
+				curTaxOut = emptyStream;
+			} 
 		}
 			
 		String[] curlines;
@@ -1262,16 +1313,27 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	     
 	    String curURLagain = "";
 	    String line = "";
-
+	    logStream.println("here2");	
     	if ((inputmark) && (file.exists()) && (!updatemark)){
     		curURLagain = OrthoscapeHelpFunctions.completeFileReader(file);
 	    }
 	    else{	    	
 			curURLagain = OrthoscapeHelpFunctions.loadUrl(sURL);
+			
+			curlines = OrthoscapeHelpFunctions.stringFounder(curURLagain, "Definition");	    	
+	    	String[] defStr = curlines[1].split("\n");
+	    	String defString = defStr[0];
+	    	
+	    	String[] curlinesmore;
+	    	curlinesmore = defString.split(">", 4);
+	    	defString = curlinesmore[2];
+	    	curlinesmore = defString.split("<", 2);
+	    	defString = curlinesmore[0].trim();
+	    	
+	    	curURLagain = curlines[1];    	
 	    	curlines = OrthoscapeHelpFunctions.stringFounder(curURLagain, "Lineage");
 	    	curURLagain = curlines[1];
 	    				
-	       	String[] curlinesmore;
 	       	curlinesmore = curURLagain.split(">", 4);
 	       	curURLagain = curlinesmore[2];
        	
@@ -1279,7 +1341,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	       	curlinesless = curURLagain.split("<", 2);
 	       	curURLagain = curlinesless[0];
 	       	
-	       	curURLagain = curURLagain.trim();
+	       	curURLagain = curURLagain.trim() + "; " + defString;
 	       	
 	       	// If we want to create local base
 	    	if (inputmark || updatemark){
@@ -1289,9 +1351,12 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	    		OrthoscapeHelpFunctions.singleFilePrinting(file, curURLagain);
 	    		
 	    		// Invisible symbol fixing.
-	  	    	curURLagain = OrthoscapeHelpFunctions.completeFileReader(file);
+	    		if (file.exists()){
+	    			curURLagain = OrthoscapeHelpFunctions.completeFileReader(file);
+	    		}
 	    	}
         }
+    	logStream.println("here3");	
     	// Taxons row data output 
        	if (outputmark){
        		curTaxOut.println(curURLagain);
@@ -1373,7 +1438,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	    	// No homologs or bad url
    	      	badTablemetka = 1;
    	    }
-   	    
+   	 logStream.println("here4");	
 	    if (m_SWScore.find()){
    	     	if (m_SWScore.find()){
    	       		strscore = m_SWScore.group();
@@ -1497,15 +1562,18 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	   		PrintStream outdomain = null;
 			try {
 				outdomain = new PrintStream(mybasedirectory + sep + "Output" + sep + "OrthologDomains" + sep + tempcurOrgName + ".txt");
-			
-				outdomain.println("Gene domains:");	    	
-		   		for (int cou = 0; cou < curGeneDomens.size(); cou++){   			   		    	    	
-		   			outdomain.println(curGeneDomens.get(cou));   	
-		   		}
-		   		outdomain.println();
-		   		outdomain.println("Ortholog domains:");
-			}catch (FileNotFoundException e) {System.out.println("Can't create domains output file");}
-	   			   		   
+			}catch (FileNotFoundException e) {
+				System.out.println("Can't create domains output file");
+				outdomain = emptyStream;
+				logStream.println("Can't create domains output file empty stream");	
+			}
+			outdomain.println("Gene domains:");	    	
+	   		for (int cou = 0; cou < curGeneDomens.size(); cou++){   			   		    	    	
+	   			outdomain.println(curGeneDomens.get(cou));   	
+	   		}
+	   		outdomain.println();
+	   		outdomain.println("Ortholog domains:");
+   			   		   
 		    List<Entry<String,Integer>> orthologDomensSorted = new ArrayList<Entry<String,Integer>>(orthologDomens.entrySet());
 			Collections.sort(orthologDomensSorted, new Comparator<Entry<String,Integer>>() {		
 				public int compare(Entry<String,Integer> e1, Entry<String,Integer> e2) {
@@ -1545,11 +1613,11 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 			outdomain.println("Number of analized orthologs: " + allOrtoDomens.size());	
 			outdomain.close();
    	    }
-   	       		   	    
+   	 logStream.println("here5 + curgomsize:" + currentgomologs.size());	 		   	    
 		int missedgomologs = 0;
 		int geneRowAddedmark = 0;
 		for (int counter=0; counter<currentgomologs.size(); counter++){
-    	
+			logStream.println("here51");
 			if (this.domensNumber != 0){
 	   	    	int domainNotFoundMetka = 0;
 	   	    	for (int id = 0; id < domensToAccept.size(); id++){
@@ -1600,26 +1668,39 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 					}
 					geneorgTable.get(orgColumn.size()-1).add("+");
 				}
-			}		        	        
+			}	
+			logStream.println("here52");
 		    file = new File(mybasedirectory + sep + "Input" + sep + "OrganismBase" + sep + gomoname + ".txt");		     
 		    curURLagain = "";
 	    	line = "";
-
+	    	logStream.println("here6_"+counter);	
 	    	if ((inputmark) && (file.exists()) && (!updatemark)){
 	    		curURLagain = OrthoscapeHelpFunctions.completeFileReader(file);
 	       	}
 	       	else{
 	       		curURLagain = OrthoscapeHelpFunctions.loadUrl(sURL);
+	       		String defString = "";
 	       		try{		       		
+	       			curlines = OrthoscapeHelpFunctions.stringFounder(curURLagain, "Definition");	    	
+	    	    	String[] defStr = curlines[1].split("\n");
+	    	    	defString = defStr[0];
+	    	    	
+	    	    	String[] curlinesmore;
+	    	    	curlinesmore = defString.split(">", 4);
+	    	    	defString = curlinesmore[2];
+	    	    	curlinesmore = defString.split("<", 2);
+	    	    	defString = curlinesmore[0].trim();
+	    	    	
+	    	    	curURLagain = curlines[1];	    	    	
 		       		curlines = OrthoscapeHelpFunctions.stringFounder(curURLagain, "Lineage");
 		       		curURLagain = curlines[1];  
-			       	String[] curlinesmore;
 			       	curlinesmore = curURLagain.split(">", 4);
 			       	curURLagain = curlinesmore[2];
 		       	
 			       	String[] curlinesless;
 			       	curlinesless = curURLagain.split("<", 2);
 			       	curURLagain = curlinesless[0];	
+			       	curURLagain = curURLagain.trim() + "; " + defString;
 	       		}catch (ArrayIndexOutOfBoundsException e){
 			    	// If we are here we probably found an ortholog-virus. We should load another url in this case
 	       			sURL = "http://www.kegg.jp/dbget-bin/www_bget?" + currentgomologs.get(counter);
@@ -1633,9 +1714,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 			       	String[] curlinesless;
 			       	curlinesless = curURLagain.split("<", 2);
 			       	curURLagain = curlinesless[0];	
-			    }
-		       	
-		       	curURLagain = curURLagain.trim();
+			    }	
 		       	
 		       	// If we want to create local base
 		    	if (inputmark || updatemark){
@@ -1645,9 +1724,12 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 		    		OrthoscapeHelpFunctions.singleFilePrinting(file, curURLagain);
 		    		
 		    		// Invisible symbol fixing.
-		  	    	curURLagain = OrthoscapeHelpFunctions.completeFileReader(file);
+		    		if (file.exists()){
+		    			curURLagain = OrthoscapeHelpFunctions.completeFileReader(file);
+		    		}	
 		    	}
-	       	}    			    			       	
+	       	}   
+	    	logStream.println("here53");
 	       	if (outputmark){
 	       		curTaxOut.println(curURLagain);
 	       	}
@@ -1690,7 +1772,8 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	    			resAge += splitAges[0];
 	    			allAges[rowCounter] = resAge;
 	    		}
-    			    		//  DI analysis start	    		if (DImark && ( (tempAgelines.length - matchcounter) <=  taxonomyDistance)){	    				    			// Specific species mark	    				    			if (speciesmark){	    				if (selectedSpecies.contains(gomoname)){	    					dihappened(curName, currentgomologs.get(counter), rowCounter);	    				}
+	    		logStream.println("here7_"+counter);		    		//  DI analysis start
+	    		String[] allTaxes = orgtax.split(";");	    		if ((Kaksmark || Pamlmark) && ( (allTaxes.length - matchcounter) <=  taxonomyDistance)){	    				    			// Specific species mark	    				    			if (speciesmark){	    				if (selectedSpecies.contains(gomoname)){	    					dihappened(curName, currentgomologs.get(counter), rowCounter);	    				}
 	    				// Right now specific species bad for DI works with PAI. So number of orthologs different for two procedures.
 	    				// Right now it's wrong for DI Power. Without comment it will be wrong for PAI Power.    				
 		    			//	else{
@@ -1698,33 +1781,116 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 		    			//	}	    			}	    			else{	    				dihappened(curName, currentgomologs.get(counter), rowCounter);	    			}				    }	    		
 	    	}
 		}
+		logStream.println("here8");	
+		logStream.println(allAgesPower.length);	
+		logStream.println(rowCounter);	
 		allAgesPower[rowCounter] = allAgesPower[rowCounter] + currentgomologs.size() - missedgomologs;
-		curTaxOut.close();         	
+		logStream.println("here81");	
+		curTaxOut.close();
+		logStream.println("here82");	
+		emptyStream.close();
+		logStream.println("here9");	
+		logStream.close();
 	}   
 
 // DI Analysis
 void dihappened(String curOrgName, String curHomoName, int rowCounter){
+	
+	PrintStream logStream2 = null;
+	try {
+		logStream2 = new PrintStream(mybasedirectory + sep + "logDI.txt");
+	}catch (FileNotFoundException e1){System.out.println("Can't create am empty stream");}	
+	
+	PrintStream emptyStream = null;	// Empty stream to avoid potential problems with file creating
+	try{
+		emptyStream = new PrintStream(System.getProperty("java.io.tmpdir") + sep + "emptyStream.txt");
+	}catch (FileNotFoundException e1){
+		System.out.println("Can't create am empty stream in system's temp directory");
+		try{ // another try in local base directory
+			emptyStream = new PrintStream(mybasedirectory + sep + "errorsLog.txt");
+		}catch (FileNotFoundException e2){System.out.println("Can't create am empty stream in local base directory");}
+	}
 
 	// Trying to find data in local base
 	String tempcurOrgName = curOrgName.replace(':', '_');
 	String tempcurHomoName = curHomoName.replace(':', '_');
-	
-	File DIfile = new File(mybasedirectory + sep + "Input" + sep + "DIBase" + sep + tempcurOrgName + "___" + tempcurHomoName + ".txt");
-	if ((inputmark) && (DIfile.exists()) && (!updatemark)){
-		try{
-			BufferedReader reader = new BufferedReader(new FileReader(DIfile.toString()));
-			String temp = reader.readLine();
-			DISumm[rowCounter] += Double.parseDouble(temp);
-			temp = reader.readLine();
-		    DISummx2[rowCounter] += Double.parseDouble(temp);
-	   		reader.close();
-	   		
-	   		if ((DISumm[rowCounter] == 0) && (DISummx2[rowCounter] == 0)){
-	   			KsEmpty[rowCounter] += 1; 
-	   		}
-		}catch (IOException e2){ System.out.println("Can't read the file " + DIfile.toString()); }
-   		return;	
+	logStream2.println("here1");
+	boolean kaksReady = false;
+	if (Kaksmark && Pamlmark){	
+		File DIfile = new File(mybasedirectory + sep + "Input" + sep + "KaksBase" + sep + tempcurOrgName + "___" + tempcurHomoName + ".txt");
+		if ((inputmark) && (DIfile.exists()) && (!updatemark)){
+			try{
+				BufferedReader reader = new BufferedReader(new FileReader(DIfile.toString()));
+				String temp = reader.readLine();
+				kaksSumm[rowCounter] += Double.parseDouble(temp);
+				temp = reader.readLine();
+			    kaksSummx2[rowCounter] += Double.parseDouble(temp);
+		   		reader.close();
+		   		
+		   		if ((kaksSumm[rowCounter] == 0) && (kaksSummx2[rowCounter] == 0)){
+		   			kaksEmpty[rowCounter] += 1; 
+		   		}
+		   		kaksReady = true;
+			}catch (IOException e2){ System.out.println("Can't read the file " + DIfile.toString()); }
+		}
+		DIfile = new File(mybasedirectory + sep + "Input" + sep + "PamlBase" + sep + tempcurOrgName + "___" + tempcurHomoName + ".txt");
+		if ((inputmark) && (DIfile.exists()) && (!updatemark)){
+			try{
+				BufferedReader reader = new BufferedReader(new FileReader(DIfile.toString()));
+				String temp = reader.readLine();
+				pamlSumm[rowCounter] += Double.parseDouble(temp);
+				temp = reader.readLine();
+				pamlSummx2[rowCounter] += Double.parseDouble(temp);
+		   		reader.close();
+		   		
+		   		if ((pamlSumm[rowCounter] == 0) && (pamlSummx2[rowCounter] == 0)){
+		   			pamlEmpty[rowCounter] += 1; 
+		   		}
+		   		if (kaksReady){
+		   			return;
+		   		}
+			}catch (IOException e2){ System.out.println("Can't read the file " + DIfile.toString()); }
+		}
 	}
+	else{
+		if (Kaksmark){
+			File DIfile = new File(mybasedirectory + sep + "Input" + sep + "KaksBase" + sep + tempcurOrgName + "___" + tempcurHomoName + ".txt");
+			if ((inputmark) && (DIfile.exists()) && (!updatemark)){
+				try{
+					BufferedReader reader = new BufferedReader(new FileReader(DIfile.toString()));
+					String temp = reader.readLine();
+					kaksSumm[rowCounter] += Double.parseDouble(temp);
+					temp = reader.readLine();
+				    kaksSummx2[rowCounter] += Double.parseDouble(temp);
+			   		reader.close();
+			   		
+			   		if ((kaksSumm[rowCounter] == 0) && (kaksSummx2[rowCounter] == 0)){
+			   			kaksEmpty[rowCounter] += 1; 
+			   		}
+			   		return;
+				}catch (IOException e2){ System.out.println("Can't read the file " + DIfile.toString()); }
+			}
+		}
+		else{
+			File DIfile = new File(mybasedirectory + sep + "Input" + sep + "PamlBase" + sep + tempcurOrgName + "___" + tempcurHomoName + ".txt");
+			if ((inputmark) && (DIfile.exists()) && (!updatemark)){
+				try{
+					BufferedReader reader = new BufferedReader(new FileReader(DIfile.toString()));
+					String temp = reader.readLine();
+					pamlSumm[rowCounter] += Double.parseDouble(temp);
+					temp = reader.readLine();
+					pamlSummx2[rowCounter] += Double.parseDouble(temp);
+			   		reader.close();
+			   		
+			   		if ((pamlSumm[rowCounter] == 0) && (pamlSummx2[rowCounter] == 0)){
+			   			pamlEmpty[rowCounter] += 1; 
+			   		}
+			   		return;
+				}catch (IOException e2){ System.out.println("Can't read the file " + DIfile.toString()); }		   			
+			}
+		}
+	}
+	logStream2.println("here2");
 	// Organism loading 		    									    				   
 	String sURL = "http://rest.kegg.jp/get/" + curOrgName;	        
 	File file = new File(mybasedirectory + sep + "Input" + sep + "GeneSequenceBase" + sep + tempcurOrgName + ".txt");
@@ -1776,7 +1942,7 @@ void dihappened(String curOrgName, String curHomoName, int rowCounter){
 			}catch (IOException e2){ System.out.println("Can't create the file " + file.toString()); }	
 			OrthoscapeHelpFunctions.doubleFilePrinting(file, organismAminoSequence, organismNucleoSequence);
 	    }	}
-
+	logStream2.println("here3");
 	// Ortholog loading		    									    	   		   
 	sURL = "http://rest.kegg.jp/get/" + curHomoName;	        
 	file = new File(mybasedirectory + sep + "Input" + sep + "OrthologSequenceBase" + sep+tempcurHomoName+".txt");
@@ -1831,6 +1997,7 @@ void dihappened(String curOrgName, String curHomoName, int rowCounter){
 			OrthoscapeHelpFunctions.doubleFilePrinting(file, orthologAminoSequence, orthologNucleoSequence);
 		}
 	}	
+	logStream2.println("here4");
 	double difpercent = (double)Math.abs(orthologAminoSequence.length()-organismAminoSequence.length())/Math.min(orthologAminoSequence.length(), organismAminoSequence.length());				
 	// Sometimes KEGG have wrong data (like one nucleotide in the end missing). There is the place to fix it.	
 	while ( (float)(organismNucleoSequence.length()/organismAminoSequence.length()) < 3){	
@@ -1845,7 +2012,7 @@ void dihappened(String curOrgName, String curHomoName, int rowCounter){
 	}	
 		while ( (float)(orthologNucleoSequence.length()/orthologAminoSequence.length()) > 3){	
 		orthologNucleoSequence = orthologNucleoSequence.substring(0, orthologNucleoSequence.length()-1);	
-	}	
+	}		logStream2.println("here5");
 	// Needleman–Wunsch alignment  	
 	if (!organismAminoSequence.equals(orthologAminoSequence)){   	  	
 		int gap_open=-11,gap_extn=-1;			
@@ -1864,7 +2031,10 @@ void dihappened(String curOrgName, String curHomoName, int rowCounter){
 				PrintStream logStream = null;
 				try {
 					logStream = new PrintStream(mybasedirectory + sep + "BigGenesLog" + sep + new java.util.Date().toString().replace(':', '_') + ".txt");
-				} catch (FileNotFoundException e) {System.out.println("Can't create BigGenesLog file");}
+				} catch (FileNotFoundException e) {
+					System.out.println("Can't create BigGenesLog file");
+					logStream = emptyStream;
+				}
 				
 				CyTable networksTable = network.getDefaultNetworkTable();
 			    CyColumn netcolumn = networksTable.getColumn("title");
@@ -1888,7 +2058,8 @@ void dihappened(String curOrgName, String curHomoName, int rowCounter){
 				logStream.println("Analysis missed");
 				logStream.close();
 				
-				KsEmpty[rowCounter] += 1;
+				kaksEmpty[rowCounter] += 1;
+				pamlEmpty[rowCounter] += 1;
 				
 				// Sleep to make separated logs
 				try {
@@ -1905,50 +2076,206 @@ void dihappened(String curOrgName, String curHomoName, int rowCounter){
 	}  
 	organismNucleoSequence = organismNucleoSequence.replace("T", "U");	
 	orthologNucleoSequence = orthologNucleoSequence.replace("T", "U");	  	
-	// Kaks calculator to get DI
-	if (organismNucleoSequence.equals(orthologNucleoSequence)){	
-		this.ngKa = 0;	
-	    this.ngKs = 0;
-	    this.ngKaKs = 0;	
-	    this.mlwlKa = 0;	
-	    this.mlwlKs = 0;	
-	    this.mlwlKaKs = 0;
-	    this.lwlKa = 0;	
-	    this.lwlKs = 0;	
-	    this.lwlKaKs = 0;	  	
-	}else{		kaKsCalcNG(organismNucleoSequence, orthologNucleoSequence);	
-		kaKsCalcMLWL(organismNucleoSequence, orthologNucleoSequence);	
-		kaKsCalcLWL(organismNucleoSequence, orthologNucleoSequence);	
-	}
- 	
-	if (lwlKs > 0){	
-		DISumm[rowCounter] += lwlKaKs;	
-	    DISummx2[rowCounter] += lwlKaKs*lwlKaKs;
-	}	
-	else{	
-		KsEmpty[rowCounter] += 1;          	
-	}	
-	
-	if (inputmark || updatemark){
-		myDIPrinting(difpercent, tempcurOrgName, tempcurHomoName);
-		try{
-			DIfile.createNewFile();
-		}catch (IOException e2){ System.out.println("Can't create the file " + DIfile.toString()); }		
+	if (Kaksmark && !kaksReady){
+		logStream2.println("here61");
+		// Kaks calculator to get DI
+		if (organismNucleoSequence.equals(orthologNucleoSequence)){	
+			this.ngKa = 0;	
+		    this.ngKs = 0;
+		    this.ngKaKs = 0;	
+		    this.mlwlKa = 0;	
+		    this.mlwlKs = 0;	
+		    this.mlwlKaKs = 0;
+		    this.lwlKa = 0;	
+		    this.lwlKs = 0;	
+		    this.lwlKaKs = 0;	  	
+		}else{
+			kaKsCalcNG(organismNucleoSequence, orthologNucleoSequence);	
+			kaKsCalcMLWL(organismNucleoSequence, orthologNucleoSequence);	
+			kaKsCalcLWL(organismNucleoSequence, orthologNucleoSequence);	
+		}
+	 	
 		if (lwlKs > 0){	
-			OrthoscapeHelpFunctions.doubleFilePrinting(DIfile, Double.toString(lwlKaKs), Double.toString(lwlKaKs*lwlKaKs));
+			kaksSumm[rowCounter] += lwlKaKs;	
+		    kaksSummx2[rowCounter] += lwlKaKs*lwlKaKs;
 		}	
 		else{	
-			OrthoscapeHelpFunctions.doubleFilePrinting(DIfile, "0", "0");         	
-		}	  		
-    }
+			kaksEmpty[rowCounter] += 1;          	
+		}	
+		
+		if (inputmark || updatemark){
+			kaksPrinting(difpercent, tempcurOrgName, tempcurHomoName);
+			File DIfile = new File(mybasedirectory + sep + "Input" + sep + "KaksBase" + sep + tempcurOrgName + "___" + tempcurHomoName + ".txt");				
+			try{
+				DIfile.createNewFile();
+			}catch (IOException e2){ System.out.println("Can't create the file " + DIfile.toString()); }		
+			if (lwlKs > 0){	
+				OrthoscapeHelpFunctions.doubleFilePrinting(DIfile, Double.toString(lwlKaKs), Double.toString(lwlKaKs*lwlKaKs));
+			}	
+			else{	
+				OrthoscapeHelpFunctions.doubleFilePrinting(DIfile, "0", "0");         	
+			}	  		
+	    }
+	}
+	if (Pamlmark){
+		logStream2.println("here62");
+		PrintStream curSequences = null;
+		try {
+			curSequences = new PrintStream(mybasedirectory + sep + "Output" + sep + "PamlBase" + sep + "curSequences.txt");
+		} catch (FileNotFoundException e1) {
+			System.out.println("Can't create PAML sequences file");
+		}
+		curSequences.println("2 " + organismNucleoSequence.length());
+		curSequences.println("First");
+		curSequences.println(organismNucleoSequence);
+		curSequences.println("Second");
+		curSequences.println(orthologNucleoSequence);
+		System.out.println(tempcurOrgName);
+		System.out.println(tempcurHomoName);
+		System.out.println(tempcurHomoName);
+		
+		PrintStream palmHelper = null;
+		try {
+			palmHelper = new PrintStream(mybasedirectory + sep + "Output" + sep + "PamlBase" + sep + "inputData.txt");
+		} catch (FileNotFoundException e1) {
+			System.out.println("Can't create PAML script file");
+		} 
+
+		palmHelper.println("seqfile = " + mybasedirectory + sep + "Output" + sep + "PamlBase" + sep + "curSequences.txt");
+		palmHelper.println("outfile = " + tempcurOrgName + "___" + tempcurHomoName +  ".txt");
+		palmHelper.println("verbose = 0");
+		palmHelper.println("noisy = 1");
+		palmHelper.println("icode = 0");
+		palmHelper.println("weighting = 0");
+		palmHelper.println("commonkappa = 1");
+		palmHelper.println("commonf3x4 = 0");
+		palmHelper.println("ndata = 1");
+		
+		String cmd[]={mypamldirectory + sep + "bin" + sep + "yn00.exe", mybasedirectory + sep + "Output" + sep + "PamlBase" + sep + "inputData.txt"};
+		
+		// TODO: Linux PAML process launch
+		ProcessBuilder pb = new ProcessBuilder(cmd);
+		File pamlDir = new File(mybasedirectory + sep + "Output" + sep + "PamlBase");
+		pb.directory(pamlDir);	 	
+    	try{
+			Process p=pb.start();
+    		p.waitFor();
+//    		System.out.println(p.exitValue());
+    		p.destroy();
+    		
+    	}catch(java.lang.Exception e){
+    		System.out.println("Can't launch PAML");
+    	}  	
+    	
+    	// Working with PAML output file
+    	File pamlOutput = null;
+    	String line;
+    	StringBuffer result = new StringBuffer();
+    	try{
+    		pamlOutput = new File(mybasedirectory + sep + "Output" + sep + "PamlBase" + sep + tempcurOrgName + "___" + tempcurHomoName + ".txt");												
+			BufferedReader reader = new BufferedReader(new FileReader(pamlOutput.toString()));
+			while ((line = reader.readLine()) != null) {
+			   	result.append(line).append("\n");
+			}
+			reader.close();
+		}catch (IOException e2){
+			System.out.println("Can't read the file " + pamlOutput.toString());
+		}
+    	
+    	if (tempcurOrgName.equals("ath_AT1G54360") && tempcurHomoName.equals("aly_ARALYDRAFT_474701")){
+    	System.out.println(result.toString());
+    	}
+    	
+		String finalPAML = result.toString();
+		
+		if (tempcurOrgName.equals("ath_AT1G54360") && tempcurHomoName.equals("aly_ARALYDRAFT_474701")){
+		System.out.println(finalPAML);
+		}
+		if (finalPAML.equals("")){
+			// PAML couldn't analyze the sequences. It means bad KEGG data (probably with stop codons in the middle of sequence)
+			LWL85value = -1;
+			LWL85mvalue = -1;
+			LPB93value = -1;
+		}
+		else{
+			// There are PAML results parsing. It can be optimized by deleting measure name splitting.
+			// It's not deleted now to be sure even if PAML developers will change order of measures or will add
+			// another one this splitting will works.
+			
+			// First: LWL85 splitting
+			String[] globalSplitter = finalPAML.split("LWL85:", 2);
+			String[] localSplitter = globalSplitter[1].split("w =", 2); 
+			String[] finalSplitter = localSplitter[1].trim().split(" ");
+			String LWL85str = finalSplitter[0];
+			if (LWL85str.contains("#IND") || LWL85str.contains("#INF")){
+				LWL85value = -1;
+			}
+			else{
+				LWL85value = Double.valueOf(LWL85str);
+			}
+			// Second: LWL85m splitting
+			globalSplitter = finalPAML.split("LWL85m:", 2);
+			localSplitter = globalSplitter[1].split("w =", 2); 
+			finalSplitter = localSplitter[1].trim().split(" ");
+			String LWL85mstr = finalSplitter[0];
+			if (LWL85mstr.contains("#IND") || LWL85str.contains("#INF")){
+				LWL85mvalue = -1;
+			}
+			else{
+				LWL85mvalue = Double.valueOf(LWL85mstr);
+			}
+			// Third: LPB93 splitting
+			globalSplitter = finalPAML.split("LPB93:", 2);
+			localSplitter = globalSplitter[1].split("w =", 2); 
+//			finalSplitter = localSplitter[1].split(" ");
+			String LPB93str = localSplitter[1].trim();
+			if (LPB93str.contains("#IND") || LWL85str.contains("#INF")){
+				LPB93value = -1;
+			}
+			else{
+				LPB93value = Double.valueOf(LPB93str);
+			}	
+		}
+    	// We should check the most important measure. right now it's LPB93 
+    	if (LPB93value > 0){	
+			pamlSumm[rowCounter] += LPB93value;	
+		    pamlSummx2[rowCounter] += LPB93value*LPB93value;
+		}	
+		else{	
+			pamlEmpty[rowCounter] += 1;          	
+		}
+		
+		if (inputmark || updatemark){
+			File DIfile = new File(mybasedirectory + sep + "Input" + sep + "PamlBase" + sep + tempcurOrgName + "___" + tempcurHomoName + ".txt");				
+			try{
+				DIfile.createNewFile();
+			}catch (IOException e2){ System.out.println("Can't create the file " + DIfile.toString()); }		
+			if (LPB93value > 0){	
+				OrthoscapeHelpFunctions.doubleFilePrinting(DIfile, Double.toString(LPB93value), Double.toString(LPB93value*LPB93value));
+			}	
+			else{	
+				OrthoscapeHelpFunctions.doubleFilePrinting(DIfile, "0", "0");         	
+			}	  		
+	    }	    	
+	}
+	logStream2.println("here7");
+	try {
+		PrintStream outStream3 = new PrintStream(mybasedirectory + sep + "Output" + sep + "AlignedSequences" + sep + tempcurOrgName + "___" + tempcurHomoName + ".txt");
+    	outStream3.println(organismNucleoSequence);
+    	outStream3.println(orthologNucleoSequence);
+    	outStream3.close();
+	}catch (IOException e2){ System.out.println("Can't create aligned sequences file"); }
+	
+	emptyStream.close();
+	logStream2.println("here8");
 }
 
-private void myDIPrinting(double difpercent, String orgName, String ortoName){
+private void kaksPrinting(double difpercent, String orgName, String ortoName){
 	try {    
-		PrintStream outStream2 = new PrintStream(mybasedirectory + sep + "Output" + sep + "KaKs" + sep + orgName + "___" + ortoName + ".txt");	    	
+		PrintStream outStream2 = new PrintStream(mybasedirectory + sep + "Output" + sep + "KaksBase" + sep + orgName + "___" + ortoName + ".txt");	    	
 		outStream2.println("Jukes-Cantor (JC) Method:");
 		outStream2.println("Ka: " + this.ngKa);
-		outStream2.println("Ks: " + this.ngKs);
+		outStream2.println("Ks: " + this.ngKs);                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
 		outStream2.println("Ka/Ks: " + this.ngKaKs);
 		outStream2.println();
     	
@@ -1963,14 +2290,8 @@ private void myDIPrinting(double difpercent, String orgName, String ortoName){
 		outStream2.println("Ks: " + this.lwlKs);
 		outStream2.println("Ka/Ks: " + this.lwlKaKs);
 		outStream2.close();
-    	
-		PrintStream outStream3 = new PrintStream(mybasedirectory + sep + "Output" + sep + "AlignedSequences" + sep + orgName + "___" + ortoName + ".txt");
-    	outStream3.println(organismNucleoSequence);
-    	outStream3.println(orthologNucleoSequence);
-    	outStream3.close();
-	}catch (IOException e2){ e2.printStackTrace(); }
+	}catch (IOException e2){ System.out.println("Can't create Kaks file"); }
 }
-
 
 //// KaKsCalculator source code implemented
 // http://kakscalculator.fumba.me/index.jsp
@@ -2028,7 +2349,7 @@ private void kaKsCalcMLWL(String cleanOriginalSequence, String cleanMutatedSeque
 	final double piQvRation = this.calcPiQvRatio(cleanOriginalSequence, cleanMutatedSequence);	 
 	Map<String, Object> pQValues = this.calculatePQValues(cleanOriginalSequence, cleanMutatedSequence);
 	
-	final double L0 = (Double) pQValues.get(L0_AVERAGE_COUNT);
+	final double L0 = (Double) pQValues.get(L2_AVERAGE_COUNT); // Maybe L0? Orthoscape team
 	final double L2 = (Double) pQValues.get(L2_AVERAGE_COUNT);
 	final double L4 = (Double) pQValues.get(L4_AVERAGE_COUNT);
 	
@@ -2093,7 +2414,7 @@ private double calcPiQvRatio(String cleanOriginalSequence, String cleanMutatedSe
 private void kaKsCalcLWL(String cleanOriginalSequence, String cleanMutatedSequence) {
 
 	Map<String, Object> pQValues = this.calculatePQValues(cleanOriginalSequence, cleanMutatedSequence);
-	final double L0 = (Double) pQValues.get(L0_AVERAGE_COUNT);
+	final double L0 = (Double) pQValues.get(L2_AVERAGE_COUNT); // Maybe L0? Orthoscape team
 	final double L2 = (Double) pQValues.get(L2_AVERAGE_COUNT);
 	final double L4 = (Double) pQValues.get(L4_AVERAGE_COUNT);
 
@@ -2133,7 +2454,7 @@ private Map<String, Double> calculateMeanVariance(
 		final Character degenerationType, String cleanOriginalSequence,
 		String cleanMutatedSequence, Map<String, Object> pQValues) {
 	
-	final double L0 = (Double) pQValues.get(L0_AVERAGE_COUNT);
+	final double L0 = (Double) pQValues.get(L2_AVERAGE_COUNT); // Maybe L0? Orthoscape team
 	final double L2 = (Double) pQValues.get(L2_AVERAGE_COUNT);
 	final double L4 = (Double) pQValues.get(L4_AVERAGE_COUNT);
 	final double[] pValues = (double[]) pQValues.get(P_VALUES);
@@ -2227,7 +2548,7 @@ private Map<String, Object> calculatePQValues(String cleanOriginalSequence,	Stri
 	double L0, L2, L4;
 
 	Map<String, Double> calculatedAvg024 = this.calculateAverage024(cleanOriginalSequence, cleanMutatedSequence);
-	L0 = calculatedAvg024.get(L0_AVERAGE_COUNT);
+	L0 = calculatedAvg024.get(L2_AVERAGE_COUNT); // Maybe L0? Orthoscape team
 	L2 = calculatedAvg024.get(L2_AVERAGE_COUNT);
 	L4 = calculatedAvg024.get(L4_AVERAGE_COUNT);
 
@@ -2269,7 +2590,7 @@ private Map<String, Object> calculatePQValues(String cleanOriginalSequence,	Stri
 		}
 	}
 
-	resultMap.put(L0_AVERAGE_COUNT, L0);
+	resultMap.put(L2_AVERAGE_COUNT, L0); // Maybe L0? Orthoscape team
 	resultMap.put(L2_AVERAGE_COUNT, L2);
 	resultMap.put(L4_AVERAGE_COUNT, L4);
 	resultMap.put(P_VALUES, pValues);
@@ -2330,7 +2651,7 @@ private Map<String, Double> calculateAverage024(String cleanOriginalSequence, St
 	mutatedCount2 = counted024.get(COUNT_2);
 	mutatedCount4 = counted024.get(COUNT_4);
 
-	resultMap.put(L0_AVERAGE_COUNT, (originalCount0 + mutatedCount0) / 2);
+	resultMap.put(L2_AVERAGE_COUNT, (originalCount0 + mutatedCount0) / 2); // Maybe L0? Orthoscape team
 	resultMap.put(L2_AVERAGE_COUNT, (originalCount2 + mutatedCount2) / 2);
 	resultMap.put(L4_AVERAGE_COUNT, (originalCount4 + mutatedCount4) / 2);
 
@@ -3521,5 +3842,125 @@ public void setMlwlKaKs(double mlwlKaKs) {
 		imut[23][21]=-1;
 		imut[23][22]=-1;
 		imut[23][23]=-1;
+	}
+	
+	private void kaksMapsInitialization(){
+		// KaKs fields
+		// NSX Map
+		nsxMap = new HashMap<String, String>();
+		nsxMap.put(ApplicationConstants.PHENYLALANINE, "NNX");
+		nsxMap.put(LEUCINE, "XNX");
+		nsxMap.put(ISOLEUCINE, "NNX");
+		nsxMap.put(METHIONINE, "NNN");
+		nsxMap.put(VALINE, "NNS");
+		nsxMap.put(SERINE1, "NNS");
+		nsxMap.put(SERINE2, "XNX");
+		nsxMap.put(PROLINE, "NNS");
+		nsxMap.put(THREONINE, "NNS");
+		nsxMap.put(ALANINE, "NNS");
+		nsxMap.put(TYROSINE, "NNX");
+		nsxMap.put(STOP_CODON, "NXX");
+		nsxMap.put(HISTIDINE, "NNX");
+		nsxMap.put(GLUTAMINE, "NNX");
+		nsxMap.put(ASPARAGINE, "NNX");
+		nsxMap.put(LYSINE, "NNX");
+		nsxMap.put(ASPARTIC_ACID, "NNX");
+		nsxMap.put(GLUTAMIC_ACID, "NNX");
+		nsxMap.put(CYSTEINE, "NNX");
+		nsxMap.put(TRYPTOPHAN, "NNN");
+		nsxMap.put(ARGININE, "XNX");
+		nsxMap.put(GLYCINE, "NNS");
+
+		// Amino acid Map
+		aminoMap = new HashMap<String, String>();
+		aminoMap.put("UUU", PHENYLALANINE);
+		aminoMap.put("UUC", PHENYLALANINE);
+		aminoMap.put("UUA", LEUCINE);
+		aminoMap.put("UUG", LEUCINE);
+		aminoMap.put("CUU", LEUCINE);
+		aminoMap.put("CUC", LEUCINE);
+		aminoMap.put("CUA", LEUCINE);
+		aminoMap.put("CUG", LEUCINE);
+		aminoMap.put("AUU", ISOLEUCINE);
+		aminoMap.put("AUC", ISOLEUCINE);
+		aminoMap.put("AUA", ISOLEUCINE);
+		aminoMap.put("AUG", METHIONINE);
+		aminoMap.put("GUU", VALINE);
+		aminoMap.put("GUC", VALINE);
+		aminoMap.put("GUA", VALINE);
+		aminoMap.put("GUG", VALINE);
+		aminoMap.put("UCU", SERINE1);
+		aminoMap.put("UCC", SERINE1);
+		aminoMap.put("UCA", SERINE1);
+		aminoMap.put("UCG", SERINE1);
+		aminoMap.put("CCU", PROLINE);
+		aminoMap.put("CCC", PROLINE);
+		aminoMap.put("CCA", PROLINE);
+		aminoMap.put("CCG", PROLINE);
+		aminoMap.put("ACU", THREONINE);
+		aminoMap.put("ACC", THREONINE);
+		aminoMap.put("ACA", THREONINE);
+		aminoMap.put("ACG", THREONINE);
+		aminoMap.put("GCU", ALANINE);
+		aminoMap.put("GCC", ALANINE);
+		aminoMap.put("GCA", ALANINE);
+		aminoMap.put("GCG", ALANINE);
+		aminoMap.put("UAU", TYROSINE);
+		aminoMap.put("UAC", TYROSINE);
+		aminoMap.put("UAA", STOP_CODON);
+		aminoMap.put("UAG", STOP_CODON);
+		aminoMap.put("UGA", STOP_CODON);
+		aminoMap.put("CAU", HISTIDINE);
+		aminoMap.put("CAC", HISTIDINE);
+		aminoMap.put("CAA", GLUTAMINE);
+		aminoMap.put("CAG", GLUTAMINE);
+		aminoMap.put("AAU", ASPARAGINE);
+		aminoMap.put("AAC", ASPARAGINE);
+		aminoMap.put("AAA", LYSINE);
+		aminoMap.put("AAG", LYSINE);
+		aminoMap.put("GAU", ASPARTIC_ACID);
+		aminoMap.put("GAC", ASPARTIC_ACID);
+		aminoMap.put("GAA", GLUTAMIC_ACID);
+		aminoMap.put("GAG", GLUTAMIC_ACID);
+		aminoMap.put("UGU", CYSTEINE);
+		aminoMap.put("UGC", CYSTEINE);
+		aminoMap.put("UGG", TRYPTOPHAN);
+		aminoMap.put("CGU", ARGININE);
+		aminoMap.put("CGC", ARGININE);
+		aminoMap.put("CGA", ARGININE);
+		aminoMap.put("CGG", ARGININE);
+		aminoMap.put("AGU", SERINE2);
+		aminoMap.put("AGC", SERINE2);
+		aminoMap.put("AGA", ARGININE);
+		aminoMap.put("AGG", ARGININE);
+		aminoMap.put("GGU", GLYCINE);
+		aminoMap.put("GGC", GLYCINE);
+		aminoMap.put("GGA", GLYCINE);
+		aminoMap.put("GGG", GLYCINE);
+
+		// Codon Degree Map
+		codonDegreeMap = new HashMap<String, String>();
+		codonDegreeMap.put(PHENYLALANINE, "002");
+		codonDegreeMap.put(LEUCINE, "204");
+		codonDegreeMap.put(ISOLEUCINE, "002");
+		codonDegreeMap.put(METHIONINE, "000");
+		codonDegreeMap.put(VALINE, "004");
+		codonDegreeMap.put(SERINE1, "004");
+		codonDegreeMap.put(SERINE2, "004");
+		codonDegreeMap.put(PROLINE, "004");
+		codonDegreeMap.put(THREONINE, "004");
+		codonDegreeMap.put(ALANINE, "004");
+		codonDegreeMap.put(TYROSINE, "002");
+		codonDegreeMap.put(STOP_CODON, "022");
+		codonDegreeMap.put(HISTIDINE, "002");
+		codonDegreeMap.put(GLUTAMINE, "002");
+		codonDegreeMap.put(ASPARAGINE, "002");
+		codonDegreeMap.put(LYSINE, "002");
+		codonDegreeMap.put(ASPARTIC_ACID, "002");
+		codonDegreeMap.put(GLUTAMIC_ACID, "002");
+		codonDegreeMap.put(CYSTEINE, "002");
+		codonDegreeMap.put(TRYPTOPHAN, "000");
+		codonDegreeMap.put(ARGININE, "204");
+		codonDegreeMap.put(GLYCINE, "004");	
 	}
 }

@@ -79,7 +79,7 @@ public class CreateHeatmapDIVisualStyleAction extends AbstractCyAction {
 		
  		// Finding the max DI to distribute colors
 		CyTable nodeTable = cyApplicationManagerServiceRef.getCurrentNetwork().getDefaultNodeTable();		
-		CyColumn DIcolumn = nodeTable.getColumn("DI Average");
+		CyColumn DIcolumn = nodeTable.getColumn("PAML Average");
  		List<Double> DIstorage = DIcolumn.getValues(Double.class);
  		
  		double maxgElem = -1;
@@ -94,7 +94,7 @@ public class CreateHeatmapDIVisualStyleAction extends AbstractCyAction {
  		}
 
  		// Heatmap coloring
- 	 	ContinuousMapping<Double, Paint> cMapping = (ContinuousMapping<Double, Paint>) this.vmfFactoryC.createVisualMappingFunction("DI Average", Double.class, BasicVisualLexicon.NODE_FILL_COLOR);				
+ 	 	ContinuousMapping<Double, Paint> cMapping = (ContinuousMapping<Double, Paint>) this.vmfFactoryC.createVisualMappingFunction("PAML Average", Double.class, BasicVisualLexicon.NODE_FILL_COLOR);				
  		
  	 	BoundaryRangeValues<Paint> brv = new BoundaryRangeValues<Paint>(Color.RED, Color.RED, Color.RED);
  	 	cMapping.addPoint(0d, brv);
