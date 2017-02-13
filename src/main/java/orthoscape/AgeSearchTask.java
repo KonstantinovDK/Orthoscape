@@ -255,7 +255,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 		DIBoxPanel.add(KaksBox);
 		DIBoxPanel.add(new JLabel(" check it to count divergency index by KaKs Calculator   "));
 		DIBoxPanel.add(PamlBox);
-		DIBoxPanel.add(new JLabel(" check it to count divergency index by Paml (requires PAML installed)."));
+		DIBoxPanel.add(new JLabel(" check it to count divergency index by PAML (requires PAML installed)."));
 		
 		JPanel taxonomyDistanceBoxPanel = new JPanel();
 		taxonomyDistanceBoxPanel.setLayout(new BoxLayout(taxonomyDistanceBoxPanel, BoxLayout.X_AXIS));
@@ -1239,13 +1239,6 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	// Work with orthologs list and taxonomy analysis.
 	void itishappened(String curURL, int rowCounter, String curName){	
 		
-		PrintStream desktopLog = null;
-		try{  	
-			desktopLog = new PrintStream("C:\\Users\\mustafinzs\\Desktop\\myLog.txt");
-		}catch (IOException e2){
-			System.out.println("Can't create complete taxonomic data file for ");
-		} 
-		desktopLog.println("here1");
 		PrintStream emptyStream = null;	// Empty stream to avoid potential problems with file creating
 		try{
 			emptyStream = new PrintStream(System.getProperty("java.io.tmpdir") + sep + "emptyStream.txt");
@@ -1255,7 +1248,6 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 				emptyStream = new PrintStream(mybasedirectory + sep + "errorsLog.txt");
 			}catch (FileNotFoundException e2){System.out.println("Can't create am empty stream in local base directory");}
 		}	
-		desktopLog.println("here2");
 		// Some data about taxonomic rows
 		PrintStream curTaxOut = null;
 		if (outputmark){
@@ -1267,7 +1259,6 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 				curTaxOut = emptyStream;
 			} 
 		}
-		desktopLog.println("here3");	
 		String[] curlines;
 		String tempcurOrgName = curName.replace(':', '_');
 		List<String> curGeneDomens = null;
@@ -1375,7 +1366,6 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	    		}
 	    	}
         }
-    	desktopLog.println("here4");
     	// Taxons row data output 
        	if (outputmark){
        		curTaxOut.println(curURLagain);
@@ -1443,8 +1433,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 
    	    String regSep = " ";
    	    String nameline = "";
-   	 desktopLog.println("here5");
-   	    // The list with genes which identity > user identity threshold
+  	    // The list with genes which identity > user identity threshold
    	    List<String> currentgomologs = new ArrayList<String>(); 	        
    	    m_regequality  = regequality.matcher(currentline);
 	    m_SWScore	   = regSWScore.matcher(currentline);
@@ -1469,8 +1458,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	    	curequality = Double.parseDouble(strequality);
 	    	curSWScore = Integer.parseInt(strscore.trim());
 	    }   
-	    desktopLog.println("here6");
-	    // Orthologs analysis. The cycle will be finished using break
+	     // Orthologs analysis. The cycle will be finished using break
    	    while (1>0){
    	    	
 	        if (badTablemetka == 1){
@@ -1512,7 +1500,6 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
     	       	break;
     	    }
     	}      
-   	 desktopLog.println("here7");
    	    ArrayList<String> domensToAccept = null;
    	    List<ArrayList<String>> allOrtoDomens = null;
    	    if (this.domensNumber != 0){
@@ -1563,7 +1550,6 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 		       	}	
 		    	allOrtoDomens.add(curOrtoDomens);
 	   	    }
-	   	 desktopLog.println("here8");	    	   	    
 	   	    // Analyze of domains array
 		   	Map<String, Integer> orthologDomens = new HashMap<String, Integer>(); 
 		   	ArrayList<String> uniqueDomens = new ArrayList<String>();
@@ -1635,8 +1621,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 			outdomain.println("Number of analized orthologs: " + allOrtoDomens.size());	
 			outdomain.close();
    	    }	
-   	 desktopLog.println("here9");
-		int missedgomologs = 0;
+   	 	int missedgomologs = 0;
 		int geneRowAddedmark = 0;
 		for (int counter=0; counter<currentgomologs.size(); counter++){
 			if (this.domensNumber != 0){
@@ -1801,13 +1786,11 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 		    			//	}	    			}	    			else{	    				dihappened(curName, currentgomologs.get(counter), rowCounter);	    			}				    }	    		
 	    	}
 		}
-		desktopLog.println("here10");
 		allAgesPower[rowCounter] = allAgesPower[rowCounter] + currentgomologs.size() - missedgomologs;
 		if (outputmark){
 			curTaxOut.close();
 		}
 		emptyStream.close();
-		desktopLog.println("here11");
 	}   
 
 // DI Analysis
@@ -1928,32 +1911,41 @@ void dihappened(String curOrgName, String curHomoName, int rowCounter){
 			}catch (IOException e2){ System.out.println("Can't read the file " + file.toString()); }
 		}
 	}	else{
-		curURLagain = OrthoscapeHelpFunctions.loadUrl(sURL);		curlines = OrthoscapeHelpFunctions.stringFounder(curURLagain, "AASEQ");
-		curlines = curlines[1].split("NTSEQ ");
-		
-		curlines[0] = curlines[0].trim();
-	    while (curlines[0].length() != 0){
-	    	String[] seqLines = curlines[0].split("\n", 2);
-	        if (seqLines.length == 1){
-	        	seqLines[0] = seqLines[0].trim();
-	        	organismAminoSequence += seqLines[0]; 
-	           	break;
-	        }
-	        curlines[0] = seqLines[1];
-	        seqLines[0] = seqLines[0].trim();
-	       	organismAminoSequence += seqLines[0];      	        
-	    }
-	    curlines[1] = curlines[1].trim();
-	    curlines = curlines[1].split("\n", 2);
-	    while (curlines[1].length() != 0){
-	    	String[] seqLines = curlines[1].split("\n", 2);
-	   	    if (seqLines[0].contains("///")){	// And of file in KEGG Rest API
-	            break;
-	        }   	    
-	        curlines[1] = seqLines[1];
-	        seqLines[0] = seqLines[0].trim();
-	        organismNucleoSequence += seqLines[0];	      	        
-	    }
+		curURLagain = OrthoscapeHelpFunctions.loadUrl(sURL);
+		try{			curlines = OrthoscapeHelpFunctions.stringFounder(curURLagain, "AASEQ");
+			curlines = curlines[1].split("NTSEQ ");
+			
+			curlines[0] = curlines[0].trim();
+		    while (curlines[0].length() != 0){
+		    	String[] seqLines = curlines[0].split("\n", 2);
+		        if (seqLines.length == 1){
+		        	seqLines[0] = seqLines[0].trim();
+		        	organismAminoSequence += seqLines[0]; 
+		           	break;
+		        }
+		        curlines[0] = seqLines[1];
+		        seqLines[0] = seqLines[0].trim();
+		       	organismAminoSequence += seqLines[0];      	        
+		    }
+		    curlines[1] = curlines[1].trim();
+		    curlines = curlines[1].split("\n", 2);
+		    while (curlines[1].length() != 0){
+		    	String[] seqLines = curlines[1].split("\n", 2);
+		   	    if (seqLines[0].contains("///")){	// And of file in KEGG Rest API
+		            break;
+		        }   	    
+		        curlines[1] = seqLines[1];
+		        seqLines[0] = seqLines[0].trim();
+		        organismNucleoSequence += seqLines[0];	      	        
+		    }
+		}catch (ArrayIndexOutOfBoundsException e){
+			System.out.println("Nucleotide or aminoacid sequence is missing");
+			organismAminoSequence = "";
+			organismNucleoSequence = "";
+			kaksEmpty[rowCounter] += 1;    
+			pamlEmpty[rowCounter] += 1;
+			return;
+		}
 	   	organismNucleoSequence = organismNucleoSequence.toUpperCase();
 	   	// If we want to create local base
 		if (inputmark || updatemark){
@@ -1982,33 +1974,42 @@ void dihappened(String curOrgName, String curHomoName, int rowCounter){
 	}
 	else{		
 		curURLagain = OrthoscapeHelpFunctions.loadUrl(sURL);
-		curlines = OrthoscapeHelpFunctions.stringFounder(curURLagain, "AASEQ");
-		curlines = curlines[1].split("NTSEQ ");
-		
-		curlines[0] = curlines[0].trim();
-	    while (curlines[0].length() != 0){
-	    	String[] seqLines = curlines[0].split("\n", 2);
-	        if (seqLines.length == 1){
-	        	seqLines[0] = seqLines[0].trim();
-	        	orthologAminoSequence += seqLines[0]; 
-	           	break;
-	        }
-	        curlines[0] = seqLines[1];
-	        seqLines[0] = seqLines[0].trim();
-	        orthologAminoSequence += seqLines[0];      	        
-	    }
-	    
-	    curlines[1] = curlines[1].trim();
-	    curlines = curlines[1].split("\n", 2);
-	    while (curlines[1].length() != 0){
-	    	String[] seqLines = curlines[1].split("\n", 2);
-	   	    if (seqLines[0].contains("///")){	// And of file in KEGG Rest API
-	            break;
-	        }  
-	        curlines[1] = seqLines[1];
-	        seqLines[0] = seqLines[0].trim();
-	        orthologNucleoSequence += seqLines[0];	      	        
-	    }
+		try{
+			curlines = OrthoscapeHelpFunctions.stringFounder(curURLagain, "AASEQ");
+			curlines = curlines[1].split("NTSEQ ");
+			
+			curlines[0] = curlines[0].trim();
+		    while (curlines[0].length() != 0){
+		    	String[] seqLines = curlines[0].split("\n", 2);
+		        if (seqLines.length == 1){
+		        	seqLines[0] = seqLines[0].trim();
+		        	orthologAminoSequence += seqLines[0]; 
+		           	break;
+		        }
+		        curlines[0] = seqLines[1];
+		        seqLines[0] = seqLines[0].trim();
+		        orthologAminoSequence += seqLines[0];      	        
+		    }
+		    
+		    curlines[1] = curlines[1].trim();
+		    curlines = curlines[1].split("\n", 2);
+		    while (curlines[1].length() != 0){
+		    	String[] seqLines = curlines[1].split("\n", 2);
+		   	    if (seqLines[0].contains("///")){	// And of file in KEGG Rest API
+		            break;
+		        }  
+		        curlines[1] = seqLines[1];
+		        seqLines[0] = seqLines[0].trim();
+		        orthologNucleoSequence += seqLines[0];	      	        
+		    }
+		}catch (ArrayIndexOutOfBoundsException e){
+			System.out.println("Nucleotide or aminoacid sequence is missing");
+			orthologAminoSequence = "";
+			orthologNucleoSequence = "";
+			kaksEmpty[rowCounter] += 1;    
+			pamlEmpty[rowCounter] += 1;
+			return;
+		}
 	    			       	
 		orthologNucleoSequence = orthologNucleoSequence.toUpperCase();
 		// If we want to create local base
@@ -2095,7 +2096,11 @@ void dihappened(String curOrgName, String curHomoName, int rowCounter){
 		else{
 			NeedlemanWunsch(organismAminoSequence, orthologAminoSequence, organismNucleoSequence, orthologNucleoSequence, gap_open, gap_extn);	
 		}
-	}  
+	}
+	// If KEGG contains stop codons it will fix it
+	organismNucleoSequence = organismNucleoSequence.replace("null", "TGA");	
+	orthologNucleoSequence = orthologNucleoSequence.replace("null", "TGA");	
+	
 	organismNucleoSequence = organismNucleoSequence.replace("T", "U");	
 	orthologNucleoSequence = orthologNucleoSequence.replace("T", "U");	  	
 	if (Kaksmark && !kaksReady){

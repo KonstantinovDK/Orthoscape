@@ -22,21 +22,45 @@ public class CyActivator extends AbstractCyActivator {
 		CyApplicationManager cyApplicationManagerServiceRef = getService(bc,CyApplicationManager.class);
 		CyGroupFactory globalcyGroupCreator = getService(bc, CyGroupFactory.class);
 		CyGroupManager globalcyGroupManager = getService(bc, CyGroupManager.class);
+		
+		// GeneMania to KEGG data initialization
+		GMtoKEGGConverterTaskFactory GMtoKEGGConverterTaskFactory = new GMtoKEGGConverterTaskFactory(cyApplicationManagerServiceRef);
+		
+		Properties GMtoKEGGConverterTaskFactoryProps = new Properties();
+		GMtoKEGGConverterTaskFactoryProps.setProperty("preferredMenu","Apps.Orthoscape.1) Converting");
+		GMtoKEGGConverterTaskFactoryProps.setProperty("title","Convert GeneMANIA network");
+		registerService(bc,GMtoKEGGConverterTaskFactory,TaskFactory.class, GMtoKEGGConverterTaskFactoryProps);
+		
+		// BioPax to KEGG data initialization
+		BPtoKEGGConverterTaskFactory BPtoKEGGConverterTaskFactory = new BPtoKEGGConverterTaskFactory(cyApplicationManagerServiceRef);
+				
+		Properties BPtoKEGGConverterTaskFactoryProps = new Properties();
+		BPtoKEGGConverterTaskFactoryProps.setProperty("preferredMenu","Apps.Orthoscape.1) Converting");
+		BPtoKEGGConverterTaskFactoryProps.setProperty("title","Convert CyPath2 network");
+		registerService(bc,BPtoKEGGConverterTaskFactory,TaskFactory.class, BPtoKEGGConverterTaskFactoryProps);
 
 		// Homology search data initialization
 		HomologySearchTaskFactory homologySearchTaskFactory = new HomologySearchTaskFactory(cyApplicationManagerServiceRef);
 		
 		Properties homologySearchTaskFactoryProps = new Properties();
-		homologySearchTaskFactoryProps.setProperty("preferredMenu","Apps.Orthoscape.Working");
+		homologySearchTaskFactoryProps.setProperty("preferredMenu","Apps.Orthoscape.2) Working");
 		homologySearchTaskFactoryProps.setProperty("title","Homology analysis");
 		registerService(bc,homologySearchTaskFactory,TaskFactory.class, homologySearchTaskFactoryProps);
+		
+		// PAI/DI search data initialization
+		AgeSearchTaskFactory ageSearchTaskFactory = new AgeSearchTaskFactory(cyApplicationManagerServiceRef);
+		
+		Properties ageSearchTaskFactoryProps = new Properties();
+		ageSearchTaskFactoryProps.setProperty("preferredMenu","Apps.Orthoscape.2) Working");
+		ageSearchTaskFactoryProps.setProperty("title","PAI and DI analysis");
+		registerService(bc,ageSearchTaskFactory,TaskFactory.class, ageSearchTaskFactoryProps);
 		
 		// Homology grouping data initialization
 		HomologGroupingTaskFactory homologGroupingTaskFactory = new HomologGroupingTaskFactory(cyApplicationManagerServiceRef);
 		homologGroupingTaskFactory.setcyGroupCreator(globalcyGroupCreator);
 		
 		Properties homologGroupingTaskFactoryProps = new Properties();
-		homologGroupingTaskFactoryProps.setProperty("preferredMenu","Apps.Orthoscape.Grouping");
+		homologGroupingTaskFactoryProps.setProperty("preferredMenu","Apps.Orthoscape.3) Grouping");
 		homologGroupingTaskFactoryProps.setProperty("title","Group the homologs");
 		registerService(bc,homologGroupingTaskFactory,TaskFactory.class, homologGroupingTaskFactoryProps);
 		
@@ -45,42 +69,10 @@ public class CyActivator extends AbstractCyActivator {
 		homologUngroupingTaskFactory.setcyGroupManager(globalcyGroupManager);
 		
 		Properties homologUngroupingTaskFactoryProps = new Properties();
-		homologUngroupingTaskFactoryProps.setProperty("preferredMenu","Apps.Orthoscape.Grouping");
+		homologUngroupingTaskFactoryProps.setProperty("preferredMenu","Apps.Orthoscape.3) Grouping");
 		homologUngroupingTaskFactoryProps.setProperty("title","Ungroup the homologs");
 		registerService(bc,homologUngroupingTaskFactory,TaskFactory.class, homologUngroupingTaskFactoryProps);
-		
-		// PAI/DI search data initialization
-		AgeSearchTaskFactory ageSearchTaskFactory = new AgeSearchTaskFactory(cyApplicationManagerServiceRef);
-		
-		Properties ageSearchTaskFactoryProps = new Properties();
-		ageSearchTaskFactoryProps.setProperty("preferredMenu","Apps.Orthoscape.Working");
-		ageSearchTaskFactoryProps.setProperty("title","PAI and DI analysis");
-		registerService(bc,ageSearchTaskFactory,TaskFactory.class, ageSearchTaskFactoryProps);
-		
-		// Reporting data initialization
-		DrawStatisticsTaskFactory drawStatisticsTaskFactory = new DrawStatisticsTaskFactory(cyApplicationManagerServiceRef);
-		
-		Properties drawStatisticsTaskFactoryProps = new Properties();
-		drawStatisticsTaskFactoryProps.setProperty("preferredMenu","Apps.Orthoscape");
-		drawStatisticsTaskFactoryProps.setProperty("title","Reporting");
-		registerService(bc,drawStatisticsTaskFactory,TaskFactory.class, drawStatisticsTaskFactoryProps);
-		
-		// GeneMania to KEGG data initialization
-		GMtoKEGGConverterTaskFactory GMtoKEGGConverterTaskFactory = new GMtoKEGGConverterTaskFactory(cyApplicationManagerServiceRef);
-		
-		Properties GMtoKEGGConverterTaskFactoryProps = new Properties();
-		GMtoKEGGConverterTaskFactoryProps.setProperty("preferredMenu","Apps.Orthoscape.Converting");
-		GMtoKEGGConverterTaskFactoryProps.setProperty("title","Convert GeneMANIA network");
-		registerService(bc,GMtoKEGGConverterTaskFactory,TaskFactory.class, GMtoKEGGConverterTaskFactoryProps);
-		
-		// BioPax to KEGG data initialization
-		BPtoKEGGConverterTaskFactory BPtoKEGGConverterTaskFactory = new BPtoKEGGConverterTaskFactory(cyApplicationManagerServiceRef);
-				
-		Properties BPtoKEGGConverterTaskFactoryProps = new Properties();
-		BPtoKEGGConverterTaskFactoryProps.setProperty("preferredMenu","Apps.Orthoscape.Converting");
-		BPtoKEGGConverterTaskFactoryProps.setProperty("title","Convert CyPath2 network");
-		registerService(bc,BPtoKEGGConverterTaskFactory,TaskFactory.class, BPtoKEGGConverterTaskFactoryProps);
-
+							
 		// Visual stiles data initialization (common to all styles)
 		VisualMappingManager vmmServiceRef = getService(bc,VisualMappingManager.class);		
 		VisualStyleFactory visualStyleFactoryServiceRef = getService(bc,VisualStyleFactory.class);
@@ -125,6 +117,14 @@ public class CyActivator extends AbstractCyActivator {
 				vmfFactoryC, vmfFactoryD, vmfFactoryP);
 		
 		registerService(bc,CreateHeatMapPAIVisualStyleAction,CyAction.class, new Properties());
+		
+		// Reporting data initialization
+		DrawStatisticsTaskFactory drawStatisticsTaskFactory = new DrawStatisticsTaskFactory(cyApplicationManagerServiceRef);
+		
+		Properties drawStatisticsTaskFactoryProps = new Properties();
+		drawStatisticsTaskFactoryProps.setProperty("preferredMenu","Apps.Orthoscape");
+		drawStatisticsTaskFactoryProps.setProperty("title","5) Reporting");
+		registerService(bc,drawStatisticsTaskFactory,TaskFactory.class, drawStatisticsTaskFactoryProps);
 	}
 }
 

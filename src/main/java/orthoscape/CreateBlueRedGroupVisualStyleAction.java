@@ -39,7 +39,7 @@ public class CreateBlueRedGroupVisualStyleAction extends AbstractCyAction {
 	public CreateBlueRedGroupVisualStyleAction(CyApplicationManager cyApplicationManagerServiceRef, VisualMappingManager vmmServiceRef, VisualStyleFactory visualStyleFactoryServiceRef, 
 			VisualMappingFunctionFactory vmfFactoryC,VisualMappingFunctionFactory vmfFactoryD,VisualMappingFunctionFactory vmfFactoryP){
 		super("Homology Based");
-		setPreferredMenu("Apps.Orthoscape.Coloring.Blue-Red Style");
+		setPreferredMenu("Apps.Orthoscape.4) Coloring.Blue-Red Style");
 
 		this.cyApplicationManagerServiceRef = cyApplicationManagerServiceRef;
 		this.visualStyleFactoryServiceRef = visualStyleFactoryServiceRef;
@@ -61,6 +61,7 @@ public class CreateBlueRedGroupVisualStyleAction extends AbstractCyAction {
     		errorpanel.setLayout(new BoxLayout(errorpanel, BoxLayout.Y_AXIS));
     		errorpanel.add(new JLabel("You have to count something in \"Working\" mode."));	
     		JOptionPane.showMessageDialog(null, errorpanel);
+    		return;
 		}
 
 		// If the style already existed, remove it first

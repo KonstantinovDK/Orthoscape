@@ -39,7 +39,7 @@ public class CreateHeatmapDIVisualStyleAction extends AbstractCyAction {
 	public CreateHeatmapDIVisualStyleAction(CyApplicationManager cyApplicationManagerServiceRef, VisualMappingManager vmmServiceRef, VisualStyleFactory visualStyleFactoryServiceRef, 
 			VisualMappingFunctionFactory vmfFactoryC,VisualMappingFunctionFactory vmfFactoryD,VisualMappingFunctionFactory vmfFactoryP){
 		super("DI Based");
-		setPreferredMenu("Apps.Orthoscape.Coloring.Heatmap Style");
+		setPreferredMenu("Apps.Orthoscape.4) Coloring.Heatmap Style");
 
 		this.cyApplicationManagerServiceRef = cyApplicationManagerServiceRef;
 		this.visualStyleFactoryServiceRef = visualStyleFactoryServiceRef;
@@ -61,6 +61,7 @@ public class CreateHeatmapDIVisualStyleAction extends AbstractCyAction {
     		errorpanel.setLayout(new BoxLayout(errorpanel, BoxLayout.Y_AXIS));
     		errorpanel.add(new JLabel("You have to count something in \"Working\" mode."));	
     		JOptionPane.showMessageDialog(null, errorpanel);
+    		return;
 		}
 
 		// If the style already existed, remove it first
