@@ -99,7 +99,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	
 	Double[] pamlSumm;				// current DI values of every node
 	Double[] pamlSummx2;			// current DI*DI values of every node
-	Integer[] pamlEmpty;			// number of pairs (gene-ortholog) with "infinity" returned by KaKs 
+	Integer[] pamlEmpty;			// number of pairs (gene-ortholog) with "infinity" returned by PAML 
 	
 	ArrayList<ArrayList<String>> geneorgTable;
 	ArrayList<String> geneRow;
@@ -174,11 +174,19 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 		homologyBoxPanel.add(new JLabel("Put the homology identity value: "));
 		homologyBoxPanel.add(equalityField);
 		
+		String baseK = "1";
+		equalityField.setValue(baseK.trim());
+		homologyBoxPanel.add(equalityField);
+		
 		// Place to put SW-Score
 		JPanel SWhomologyBoxPanel = new JPanel();
 		SWhomologyBoxPanel.setLayout(new BoxLayout(SWhomologyBoxPanel, BoxLayout.X_AXIS));
 		SWhomologyBoxPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 		SWhomologyBoxPanel.add(new JLabel("Put the Smith Waterman score value: "));
+		SWhomologyBoxPanel.add(SWequalityField);
+		
+		baseK = "1000";
+		SWequalityField.setValue(baseK.trim());
 		SWhomologyBoxPanel.add(SWequalityField);
 		
 		// Place to put domains number
@@ -204,6 +212,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 					
 		// Box to use local base
 		JCheckBox localbaseBox = new JCheckBox();
+		localbaseBox.setSelected(true);
 		JPanel checkBoxPanel = new JPanel();
 		checkBoxPanel.setLayout(new BoxLayout(checkBoxPanel, BoxLayout.X_AXIS));
 		checkBoxPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -223,6 +232,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 		
 		// Box to create output data to make reports
 		JCheckBox storagebaseBox = new JCheckBox();
+		storagebaseBox.setSelected(true);
 		JPanel storageBoxPanel = new JPanel();
 		storageBoxPanel.setLayout(new BoxLayout(storageBoxPanel, BoxLayout.X_AXIS));
 		storageBoxPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -357,12 +367,24 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 			    }	
 			}
 			else{
+				// "Cancel" button option
 				System.out.println("Cancelled");
 				return;
 			}
 	        
 			// Directories creating
-	        if (this.inputmark){
+	        if (this.inputmark){	        	
+	        	// File with base version
+		        try { 
+			        File file = new File(mybasedirectory + sep + "baseVersion.txt");
+			        if(!file.exists()) {
+			        	file.createNewFile();
+				        PrintWriter out = new PrintWriter(file.getAbsoluteFile());
+				        out.print("The base forming started " + new java.util.Date());
+				        out.close();
+			      	}
+		        }catch (IOException e2){ System.out.println("Can't create a baseVersion file"); }
+		        
 		        File dir = new File(mybasedirectory + sep + "Input" + sep);
 			    if (!dir.isDirectory()){
 			    	dir.mkdir();
@@ -424,12 +446,12 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 						
 						File mydir = new File(mypamldirectory + sep);
 					    if (!mydir.isDirectory()){
-					    	System.exit(1);
+					    	return;
 					    }	
 					}
 					else{
 						System.out.println("Cancelled");
-						System.exit(0);
+						return;
 					}
 			    }
 
@@ -478,18 +500,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 				    	dir.mkdir();
 				    }	
 			    }
-	        }
-
-	        // File with base version
-	        try { 
-		        File file = new File(mybasedirectory + sep + "baseVersion.txt");
-		        if(!file.exists()) {
-		        	file.createNewFile();
-			        PrintWriter out = new PrintWriter(file.getAbsoluteFile());
-			        out.print("The base forming started " + new java.util.Date());
-			        out.close();
-		      	}
-	        }catch (IOException e2){ System.out.println("Can't create a baseVersion file"); }
+	        }        
 		}
 		
 		// Specific DI species list initialization
@@ -511,10 +522,8 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 		}
 		
 		// Domains initialization
-		if (this.domenmark){
-			
-			selectedDomens = new ArrayList<String>();
-					
+		if (this.domenmark){			
+			selectedDomens = new ArrayList<String>();					
 			String unseparatedDomens = domenArea.getText();
 			String[] separatedDomens = unseparatedDomens.split(","); 
 			
@@ -681,15 +690,17 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
    	     		   	     
 	   	    	 String sURL = "http://www.kegg.jp/ssdb-bin/ssdb_best?org_gene=" + v_namedata.get(j);	   	    	 				              
 			     String tempgomoname = v_namedata.get(j).replace(':', '_');
-			     File file = new File(mybasedirectory + sep + "Input" + sep + "OrthologBase" + sep + tempgomoname + ".txt");
-			  	 String curURL = "";
+			     String curURL = "";
 		    	 int aminoNumber = 0;			     
 			     
 		    	 // If the local base exists 
-		    	 if ((inputmark) && (file.exists()) && (!updatemark)){
-		    		 curURL = OrthoscapeHelpFunctions.completeFileReader(file);	
-		    		 String[] curlines = curURL.split("\n", 2);	// These 2 rows made to evade animoacid length
-		    	  	 curURL = curlines[1];						// The old parameter should be deleted in the next version
+		    	 if ((inputmark) && (!updatemark)){
+		    		 File file = new File(mybasedirectory + sep + "Input" + sep + "OrthologBase" + sep + tempgomoname + ".txt");
+		    		 if (file.exists()){
+			    		 curURL = OrthoscapeHelpFunctions.completeFileReader(file);	
+			    		 String[] curlines = curURL.split("\n", 2);	// These 2 rows made to evade animoacid length
+			    	  	 curURL = curlines[1];						// The old parameter should be deleted in the next version
+		    		 }
 		    	 }
 		    	 // If the local base doesn't exist
 		    	 else{
@@ -719,7 +730,8 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 			       	
 		       	    // If we want to create local base
 					if (inputmark || updatemark){
-						try {
+						File file = new File(mybasedirectory + sep + "Input" + sep + "OrthologBase" + sep + tempgomoname + ".txt");
+						try {							
 							file.createNewFile();
 						}catch (IOException e2){ System.out.println("Can't create the file " + file.toString()); }
 						OrthoscapeHelpFunctions.doubleFilePrinting(file, Integer.toString(aminoNumber), curURL);
@@ -1225,13 +1237,15 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	}
 		
 	// Work with orthologs list and taxonomy analysis.
-	void itishappened(String curURL, int rowCounter, String curName){
-		PrintStream logStream = null;
-		try {
-			logStream = new PrintStream(mybasedirectory + sep + "log.txt");
-		}catch (FileNotFoundException e1){System.out.println("Can't create am empty stream");}	
-			
-		logStream.println("here1");	
+	void itishappened(String curURL, int rowCounter, String curName){	
+		
+		PrintStream desktopLog = null;
+		try{  	
+			desktopLog = new PrintStream("C:\\Users\\mustafinzs\\Desktop\\myLog.txt");
+		}catch (IOException e2){
+			System.out.println("Can't create complete taxonomic data file for ");
+		} 
+		desktopLog.println("here1");
 		PrintStream emptyStream = null;	// Empty stream to avoid potential problems with file creating
 		try{
 			emptyStream = new PrintStream(System.getProperty("java.io.tmpdir") + sep + "emptyStream.txt");
@@ -1241,7 +1255,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 				emptyStream = new PrintStream(mybasedirectory + sep + "errorsLog.txt");
 			}catch (FileNotFoundException e2){System.out.println("Can't create am empty stream in local base directory");}
 		}	
-
+		desktopLog.println("here2");
 		// Some data about taxonomic rows
 		PrintStream curTaxOut = null;
 		if (outputmark){
@@ -1253,7 +1267,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 				curTaxOut = emptyStream;
 			} 
 		}
-			
+		desktopLog.println("here3");	
 		String[] curlines;
 		String tempcurOrgName = curName.replace(':', '_');
 		List<String> curGeneDomens = null;
@@ -1263,19 +1277,21 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 			curGeneDomens = new ArrayList<String>();
 			
 	    	String sURL = "http://rest.kegg.jp/get/" + curName;	 
-		    File file = new File(mybasedirectory + sep + "Input" + sep + "Domains" + sep + tempcurOrgName + ".txt");	     
 		    String curURLagain;
 			
 	    	String line = "";
 	
-	    	if ((inputmark) && (file.exists()) && (!updatemark)){
-				try {
-					BufferedReader reader = new BufferedReader(new FileReader(file.toString()));
-		    		while ((line = reader.readLine()) != null) {
-		    			curGeneDomens.add(line);
-					}
-		  	    	reader.close();
-				}catch (IOException e2){ System.out.println("Can't read the file " + file.toString());}
+	    	if ((inputmark) && (!updatemark)){
+	    		File file = new File(mybasedirectory + sep + "Input" + sep + "Domains" + sep + tempcurOrgName + ".txt");
+	    		if (file.exists()){
+					try {
+						BufferedReader reader = new BufferedReader(new FileReader(file.toString()));
+			    		while ((line = reader.readLine()) != null) {
+			    			curGeneDomens.add(line);
+						}
+			  	    	reader.close();
+					}catch (IOException e2){ System.out.println("Can't read the file " + file.toString());}
+	    		}
 	  	    }
 		    else{
 		       	curURLagain = OrthoscapeHelpFunctions.loadUrl(sURL);	
@@ -1293,6 +1309,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 		   	    
 		        // If we want to create local base
 		       	if (inputmark || updatemark){
+		       		File file = new File(mybasedirectory + sep + "Input" + sep + "Domains" + sep + tempcurOrgName + ".txt");
 				   	try{
 		       			file.createNewFile();
 		       		}catch (IOException e2){ System.out.println("Can't create the file " + file.toString()); }
@@ -1309,13 +1326,14 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	      	 gomoname = m_orgname.group();
 	    }
 	    String sURL = "http://www.kegg.jp/dbget-bin/www_bget?" + gomoname;	        
-	    File file = new File(mybasedirectory + sep + "Input" + sep + "OrganismBase" + sep + gomoname + ".txt");
 	     
 	    String curURLagain = "";
 	    String line = "";
-	    logStream.println("here2");	
-    	if ((inputmark) && (file.exists()) && (!updatemark)){
-    		curURLagain = OrthoscapeHelpFunctions.completeFileReader(file);
+    	if ((inputmark) && (!updatemark)){
+    		File file = new File(mybasedirectory + sep + "Input" + sep + "OrganismBase" + sep + gomoname + ".txt");
+    	    if (file.exists()){
+    	    	curURLagain = OrthoscapeHelpFunctions.completeFileReader(file);
+    	    }
 	    }
 	    else{	    	
 			curURLagain = OrthoscapeHelpFunctions.loadUrl(sURL);
@@ -1345,6 +1363,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	       	
 	       	// If we want to create local base
 	    	if (inputmark || updatemark){
+	    		File file = new File(mybasedirectory + sep + "Input" + sep + "OrganismBase" + sep + gomoname + ".txt");	    	    
 	    		try{
 	    			file.createNewFile();
 	    		}catch (IOException e2){ System.out.println("Can't create the file " + file.toString()); }
@@ -1356,7 +1375,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	    		}
 	    	}
         }
-    	logStream.println("here3");	
+    	desktopLog.println("here4");
     	// Taxons row data output 
        	if (outputmark){
        		curTaxOut.println(curURLagain);
@@ -1424,7 +1443,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 
    	    String regSep = " ";
    	    String nameline = "";
-    
+   	 desktopLog.println("here5");
    	    // The list with genes which identity > user identity threshold
    	    List<String> currentgomologs = new ArrayList<String>(); 	        
    	    m_regequality  = regequality.matcher(currentline);
@@ -1438,7 +1457,6 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	    	// No homologs or bad url
    	      	badTablemetka = 1;
    	    }
-   	 logStream.println("here4");	
 	    if (m_SWScore.find()){
    	     	if (m_SWScore.find()){
    	       		strscore = m_SWScore.group();
@@ -1451,6 +1469,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	    	curequality = Double.parseDouble(strequality);
 	    	curSWScore = Integer.parseInt(strscore.trim());
 	    }   
+	    desktopLog.println("here6");
 	    // Orthologs analysis. The cycle will be finished using break
    	    while (1>0){
    	    	
@@ -1493,6 +1512,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
     	       	break;
     	    }
     	}      
+   	 desktopLog.println("here7");
    	    ArrayList<String> domensToAccept = null;
    	    List<ArrayList<String>> allOrtoDomens = null;
    	    if (this.domensNumber != 0){
@@ -1504,17 +1524,19 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 		    	
 		    	String tempcurOrtoName = currentgomologs.get(counter).replace(':', '_');
 		    	sURL = "http://rest.kegg.jp/get/" + currentgomologs.get(counter);	        
-			    file = new File(mybasedirectory + sep + "Input" + sep + "Domains" + sep + tempcurOrtoName + ".txt");
-		    	line = "";
+			    line = "";
 	
-		    	if ((inputmark) && (file.exists()) && (!updatemark)){
-					try{
-						BufferedReader reader = new BufferedReader(new FileReader(file.toString()));
-		    			while ((line = reader.readLine()) != null) {
-		    				curOrtoDomens.add(line);
-				   		}
-		  	       		reader.close();
-					}catch (IOException e2){ System.out.println("Can't read the file " + file.toString());}
+		    	if ((inputmark) && (!updatemark)){
+		    		File file = new File(mybasedirectory + sep + "Input" + sep + "Domains" + sep + tempcurOrtoName + ".txt");
+			    	if (file.exists()){
+						try{
+							BufferedReader reader = new BufferedReader(new FileReader(file.toString()));
+			    			while ((line = reader.readLine()) != null) {
+			    				curOrtoDomens.add(line);
+					   		}
+			  	       		reader.close();
+						}catch (IOException e2){ System.out.println("Can't read the file " + file.toString());}
+			    	}
 		       	}
 		       	else{
 		       		curURLagain = OrthoscapeHelpFunctions.loadUrl(sURL);
@@ -1532,6 +1554,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 			   	    
 		       		// If we want to create local base
 				   	if (inputmark || updatemark){
+				   		File file = new File(mybasedirectory + sep + "Input" + sep + "Domains" + sep + tempcurOrtoName + ".txt");				    	
 				   		try{
 				   			file.createNewFile();
 				   		}catch (IOException e2){ System.out.println("Can't create the file " + file.toString()); }
@@ -1540,7 +1563,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 		       	}	
 		    	allOrtoDomens.add(curOrtoDomens);
 	   	    }
-	   	    	    	   	    
+	   	 desktopLog.println("here8");	    	   	    
 	   	    // Analyze of domains array
 		   	Map<String, Integer> orthologDomens = new HashMap<String, Integer>(); 
 		   	ArrayList<String> uniqueDomens = new ArrayList<String>();
@@ -1565,7 +1588,6 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 			}catch (FileNotFoundException e) {
 				System.out.println("Can't create domains output file");
 				outdomain = emptyStream;
-				logStream.println("Can't create domains output file empty stream");	
 			}
 			outdomain.println("Gene domains:");	    	
 	   		for (int cou = 0; cou < curGeneDomens.size(); cou++){   			   		    	    	
@@ -1612,12 +1634,11 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	   
 			outdomain.println("Number of analized orthologs: " + allOrtoDomens.size());	
 			outdomain.close();
-   	    }
-   	 logStream.println("here5 + curgomsize:" + currentgomologs.size());	 		   	    
+   	    }	
+   	 desktopLog.println("here9");
 		int missedgomologs = 0;
 		int geneRowAddedmark = 0;
 		for (int counter=0; counter<currentgomologs.size(); counter++){
-			logStream.println("here51");
 			if (this.domensNumber != 0){
 	   	    	int domainNotFoundMetka = 0;
 	   	    	for (int id = 0; id < domensToAccept.size(); id++){
@@ -1669,13 +1690,13 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 					geneorgTable.get(orgColumn.size()-1).add("+");
 				}
 			}	
-			logStream.println("here52");
-		    file = new File(mybasedirectory + sep + "Input" + sep + "OrganismBase" + sep + gomoname + ".txt");		     
 		    curURLagain = "";
 	    	line = "";
-	    	logStream.println("here6_"+counter);	
-	    	if ((inputmark) && (file.exists()) && (!updatemark)){
-	    		curURLagain = OrthoscapeHelpFunctions.completeFileReader(file);
+	    	if ((inputmark) && (!updatemark)){
+	    		File file = new File(mybasedirectory + sep + "Input" + sep + "OrganismBase" + sep + gomoname + ".txt");		     
+	    		if (file.exists()){
+	    			curURLagain = OrthoscapeHelpFunctions.completeFileReader(file);
+	    		}
 	       	}
 	       	else{
 	       		curURLagain = OrthoscapeHelpFunctions.loadUrl(sURL);
@@ -1718,6 +1739,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 		       	
 		       	// If we want to create local base
 		    	if (inputmark || updatemark){
+		    		File file = new File(mybasedirectory + sep + "Input" + sep + "OrganismBase" + sep + gomoname + ".txt");		     		    		
 		    		try{
 		    			file.createNewFile();
 		    		}catch (IOException e2){ System.out.println("Can't create the file " + file.toString()); }
@@ -1729,7 +1751,6 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 		    		}	
 		    	}
 	       	}   
-	    	logStream.println("here53");
 	       	if (outputmark){
 	       		curTaxOut.println(curURLagain);
 	       	}
@@ -1771,8 +1792,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	    			String[] splitAges = someAge.split(";", 2);
 	    			resAge += splitAges[0];
 	    			allAges[rowCounter] = resAge;
-	    		}
-	    		logStream.println("here7_"+counter);		    		//  DI analysis start
+	    		}	    		//  DI analysis start
 	    		String[] allTaxes = orgtax.split(";");	    		if ((Kaksmark || Pamlmark) && ( (allTaxes.length - matchcounter) <=  taxonomyDistance)){	    				    			// Specific species mark	    				    			if (speciesmark){	    				if (selectedSpecies.contains(gomoname)){	    					dihappened(curName, currentgomologs.get(counter), rowCounter);	    				}
 	    				// Right now specific species bad for DI works with PAI. So number of orthologs different for two procedures.
 	    				// Right now it's wrong for DI Power. Without comment it will be wrong for PAI Power.    				
@@ -1781,25 +1801,17 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 		    			//	}	    			}	    			else{	    				dihappened(curName, currentgomologs.get(counter), rowCounter);	    			}				    }	    		
 	    	}
 		}
-		logStream.println("here8");	
-		logStream.println(allAgesPower.length);	
-		logStream.println(rowCounter);	
+		desktopLog.println("here10");
 		allAgesPower[rowCounter] = allAgesPower[rowCounter] + currentgomologs.size() - missedgomologs;
-		logStream.println("here81");	
-		curTaxOut.close();
-		logStream.println("here82");	
+		if (outputmark){
+			curTaxOut.close();
+		}
 		emptyStream.close();
-		logStream.println("here9");	
-		logStream.close();
+		desktopLog.println("here11");
 	}   
 
 // DI Analysis
 void dihappened(String curOrgName, String curHomoName, int rowCounter){
-	
-	PrintStream logStream2 = null;
-	try {
-		logStream2 = new PrintStream(mybasedirectory + sep + "logDI.txt");
-	}catch (FileNotFoundException e1){System.out.println("Can't create am empty stream");}	
 	
 	PrintStream emptyStream = null;	// Empty stream to avoid potential problems with file creating
 	try{
@@ -1814,48 +1826,11 @@ void dihappened(String curOrgName, String curHomoName, int rowCounter){
 	// Trying to find data in local base
 	String tempcurOrgName = curOrgName.replace(':', '_');
 	String tempcurHomoName = curHomoName.replace(':', '_');
-	logStream2.println("here1");
 	boolean kaksReady = false;
 	if (Kaksmark && Pamlmark){	
-		File DIfile = new File(mybasedirectory + sep + "Input" + sep + "KaksBase" + sep + tempcurOrgName + "___" + tempcurHomoName + ".txt");
-		if ((inputmark) && (DIfile.exists()) && (!updatemark)){
-			try{
-				BufferedReader reader = new BufferedReader(new FileReader(DIfile.toString()));
-				String temp = reader.readLine();
-				kaksSumm[rowCounter] += Double.parseDouble(temp);
-				temp = reader.readLine();
-			    kaksSummx2[rowCounter] += Double.parseDouble(temp);
-		   		reader.close();
-		   		
-		   		if ((kaksSumm[rowCounter] == 0) && (kaksSummx2[rowCounter] == 0)){
-		   			kaksEmpty[rowCounter] += 1; 
-		   		}
-		   		kaksReady = true;
-			}catch (IOException e2){ System.out.println("Can't read the file " + DIfile.toString()); }
-		}
-		DIfile = new File(mybasedirectory + sep + "Input" + sep + "PamlBase" + sep + tempcurOrgName + "___" + tempcurHomoName + ".txt");
-		if ((inputmark) && (DIfile.exists()) && (!updatemark)){
-			try{
-				BufferedReader reader = new BufferedReader(new FileReader(DIfile.toString()));
-				String temp = reader.readLine();
-				pamlSumm[rowCounter] += Double.parseDouble(temp);
-				temp = reader.readLine();
-				pamlSummx2[rowCounter] += Double.parseDouble(temp);
-		   		reader.close();
-		   		
-		   		if ((pamlSumm[rowCounter] == 0) && (pamlSummx2[rowCounter] == 0)){
-		   			pamlEmpty[rowCounter] += 1; 
-		   		}
-		   		if (kaksReady){
-		   			return;
-		   		}
-			}catch (IOException e2){ System.out.println("Can't read the file " + DIfile.toString()); }
-		}
-	}
-	else{
-		if (Kaksmark){
+		if ((inputmark) && (!updatemark)){
 			File DIfile = new File(mybasedirectory + sep + "Input" + sep + "KaksBase" + sep + tempcurOrgName + "___" + tempcurHomoName + ".txt");
-			if ((inputmark) && (DIfile.exists()) && (!updatemark)){
+			if (DIfile.exists()){
 				try{
 					BufferedReader reader = new BufferedReader(new FileReader(DIfile.toString()));
 					String temp = reader.readLine();
@@ -1867,13 +1842,13 @@ void dihappened(String curOrgName, String curHomoName, int rowCounter){
 			   		if ((kaksSumm[rowCounter] == 0) && (kaksSummx2[rowCounter] == 0)){
 			   			kaksEmpty[rowCounter] += 1; 
 			   		}
-			   		return;
+			   		kaksReady = true;
 				}catch (IOException e2){ System.out.println("Can't read the file " + DIfile.toString()); }
 			}
 		}
-		else{
+		if ((inputmark) && (!updatemark)){
 			File DIfile = new File(mybasedirectory + sep + "Input" + sep + "PamlBase" + sep + tempcurOrgName + "___" + tempcurHomoName + ".txt");
-			if ((inputmark) && (DIfile.exists()) && (!updatemark)){
+			if (DIfile.exists()){
 				try{
 					BufferedReader reader = new BufferedReader(new FileReader(DIfile.toString()));
 					String temp = reader.readLine();
@@ -1885,28 +1860,73 @@ void dihappened(String curOrgName, String curHomoName, int rowCounter){
 			   		if ((pamlSumm[rowCounter] == 0) && (pamlSummx2[rowCounter] == 0)){
 			   			pamlEmpty[rowCounter] += 1; 
 			   		}
-			   		return;
-				}catch (IOException e2){ System.out.println("Can't read the file " + DIfile.toString()); }		   			
+			   		if (kaksReady){
+			   			return;
+			   		}
+				}catch (IOException e2){ System.out.println("Can't read the file " + DIfile.toString()); }
 			}
 		}
 	}
-	logStream2.println("here2");
+	else{
+		if (Kaksmark){
+			if ((inputmark) && (!updatemark)){
+				File DIfile = new File(mybasedirectory + sep + "Input" + sep + "KaksBase" + sep + tempcurOrgName + "___" + tempcurHomoName + ".txt");
+				if (DIfile.exists()){
+					try{
+						BufferedReader reader = new BufferedReader(new FileReader(DIfile.toString()));
+						String temp = reader.readLine();
+						kaksSumm[rowCounter] += Double.parseDouble(temp);
+						temp = reader.readLine();
+					    kaksSummx2[rowCounter] += Double.parseDouble(temp);
+				   		reader.close();
+				   		
+				   		if ((kaksSumm[rowCounter] == 0) && (kaksSummx2[rowCounter] == 0)){
+				   			kaksEmpty[rowCounter] += 1; 
+				   		}
+				   		return;
+					}catch (IOException e2){ System.out.println("Can't read the file " + DIfile.toString()); }
+				}
+			}
+		}
+		else{
+			if ((inputmark) && (!updatemark)){
+				File DIfile = new File(mybasedirectory + sep + "Input" + sep + "PamlBase" + sep + tempcurOrgName + "___" + tempcurHomoName + ".txt");
+				if (DIfile.exists()){
+					try{					
+						BufferedReader reader = new BufferedReader(new FileReader(DIfile.toString()));
+						String temp = reader.readLine();
+						pamlSumm[rowCounter] += Double.parseDouble(temp);
+						temp = reader.readLine();
+						pamlSummx2[rowCounter] += Double.parseDouble(temp);
+				   		reader.close();
+				   		
+				   		if ((pamlSumm[rowCounter] == 0) && (pamlSummx2[rowCounter] == 0)){
+				   			pamlEmpty[rowCounter] += 1; 
+				   		}
+				   		return;
+					}catch (IOException e2){ System.out.println("Can't read the file " + DIfile.toString()); }	
+				}
+			}
+		}
+	}
 	// Organism loading 		    									    				   
 	String sURL = "http://rest.kegg.jp/get/" + curOrgName;	        
-	File file = new File(mybasedirectory + sep + "Input" + sep + "GeneSequenceBase" + sep + tempcurOrgName + ".txt");
- 
+	
 	String curURLagain;
 	organismAminoSequence = "";
 	organismNucleoSequence = "";
 	String[] curlines;
 
-	if ((inputmark) && (file.exists()) && (!updatemark)){
-		try{
-			BufferedReader reader = new BufferedReader(new FileReader(file.toString()));
-			organismAminoSequence = reader.readLine();
-			organismNucleoSequence = reader.readLine();
-	   		reader.close();
-		}catch (IOException e2){ System.out.println("Can't read the file " + file.toString()); }
+	if ((inputmark) && (!updatemark)){
+		File file = new File(mybasedirectory + sep + "Input" + sep + "GeneSequenceBase" + sep + tempcurOrgName + ".txt");
+		if (file.exists()){ 
+			try{
+				BufferedReader reader = new BufferedReader(new FileReader(file.toString()));
+				organismAminoSequence = reader.readLine();
+				organismNucleoSequence = reader.readLine();
+		   		reader.close();
+			}catch (IOException e2){ System.out.println("Can't read the file " + file.toString()); }
+		}
 	}	else{
 		curURLagain = OrthoscapeHelpFunctions.loadUrl(sURL);		curlines = OrthoscapeHelpFunctions.stringFounder(curURLagain, "AASEQ");
 		curlines = curlines[1].split("NTSEQ ");
@@ -1937,26 +1957,28 @@ void dihappened(String curOrgName, String curHomoName, int rowCounter){
 	   	organismNucleoSequence = organismNucleoSequence.toUpperCase();
 	   	// If we want to create local base
 		if (inputmark || updatemark){
+			File file = new File(mybasedirectory + sep + "Input" + sep + "GeneSequenceBase" + sep + tempcurOrgName + ".txt");			
 			try{
 				file.createNewFile();
 			}catch (IOException e2){ System.out.println("Can't create the file " + file.toString()); }	
 			OrthoscapeHelpFunctions.doubleFilePrinting(file, organismAminoSequence, organismNucleoSequence);
 	    }	}
-	logStream2.println("here3");
 	// Ortholog loading		    									    	   		   
 	sURL = "http://rest.kegg.jp/get/" + curHomoName;	        
-	file = new File(mybasedirectory + sep + "Input" + sep + "OrthologSequenceBase" + sep+tempcurHomoName+".txt");
 	 
 	curURLagain = "";
 	orthologAminoSequence = "";
 	orthologNucleoSequence = "";
-	if ((inputmark) && (file.exists()) && (!updatemark)){
-		try{
-			BufferedReader reader = new BufferedReader(new FileReader(file.toString()));
-			orthologAminoSequence = reader.readLine();
-			orthologNucleoSequence = reader.readLine();
-			reader.close();
-		}catch (IOException e2){ System.out.println("Can't read the file " + file.toString()); }
+	if ((inputmark) && (!updatemark)){
+		File file = new File(mybasedirectory + sep + "Input" + sep + "OrthologSequenceBase" + sep+tempcurHomoName+".txt");
+		if (file.exists()){
+			try{
+				BufferedReader reader = new BufferedReader(new FileReader(file.toString()));
+				orthologAminoSequence = reader.readLine();
+				orthologNucleoSequence = reader.readLine();
+				reader.close();
+			}catch (IOException e2){ System.out.println("Can't read the file " + file.toString()); }
+		}
 	}
 	else{		
 		curURLagain = OrthoscapeHelpFunctions.loadUrl(sURL);
@@ -1991,13 +2013,13 @@ void dihappened(String curOrgName, String curHomoName, int rowCounter){
 		orthologNucleoSequence = orthologNucleoSequence.toUpperCase();
 		// If we want to create local base
 		if (inputmark || updatemark){
+			File file = new File(mybasedirectory + sep + "Input" + sep + "OrthologSequenceBase" + sep+tempcurHomoName+".txt");			
 			try{
 				file.createNewFile();
 			}catch (IOException e2){ System.out.println("Can't create the file " + file.toString()); }			
 			OrthoscapeHelpFunctions.doubleFilePrinting(file, orthologAminoSequence, orthologNucleoSequence);
 		}
 	}	
-	logStream2.println("here4");
 	double difpercent = (double)Math.abs(orthologAminoSequence.length()-organismAminoSequence.length())/Math.min(orthologAminoSequence.length(), organismAminoSequence.length());				
 	// Sometimes KEGG have wrong data (like one nucleotide in the end missing). There is the place to fix it.	
 	while ( (float)(organismNucleoSequence.length()/organismAminoSequence.length()) < 3){	
@@ -2012,7 +2034,7 @@ void dihappened(String curOrgName, String curHomoName, int rowCounter){
 	}	
 		while ( (float)(orthologNucleoSequence.length()/orthologAminoSequence.length()) > 3){	
 		orthologNucleoSequence = orthologNucleoSequence.substring(0, orthologNucleoSequence.length()-1);	
-	}		logStream2.println("here5");
+	}
 	// Needleman–Wunsch alignment  	
 	if (!organismAminoSequence.equals(orthologAminoSequence)){   	  	
 		int gap_open=-11,gap_extn=-1;			
@@ -2077,7 +2099,6 @@ void dihappened(String curOrgName, String curHomoName, int rowCounter){
 	organismNucleoSequence = organismNucleoSequence.replace("T", "U");	
 	orthologNucleoSequence = orthologNucleoSequence.replace("T", "U");	  	
 	if (Kaksmark && !kaksReady){
-		logStream2.println("here61");
 		// Kaks calculator to get DI
 		if (organismNucleoSequence.equals(orthologNucleoSequence)){	
 			this.ngKa = 0;	
@@ -2118,7 +2139,6 @@ void dihappened(String curOrgName, String curHomoName, int rowCounter){
 	    }
 	}
 	if (Pamlmark){
-		logStream2.println("here62");
 		PrintStream curSequences = null;
 		try {
 			curSequences = new PrintStream(mybasedirectory + sep + "Output" + sep + "PamlBase" + sep + "curSequences.txt");
@@ -2258,7 +2278,6 @@ void dihappened(String curOrgName, String curHomoName, int rowCounter){
 			}	  		
 	    }	    	
 	}
-	logStream2.println("here7");
 	try {
 		PrintStream outStream3 = new PrintStream(mybasedirectory + sep + "Output" + sep + "AlignedSequences" + sep + tempcurOrgName + "___" + tempcurHomoName + ".txt");
     	outStream3.println(organismNucleoSequence);
@@ -2267,7 +2286,6 @@ void dihappened(String curOrgName, String curHomoName, int rowCounter){
 	}catch (IOException e2){ System.out.println("Can't create aligned sequences file"); }
 	
 	emptyStream.close();
-	logStream2.println("here8");
 }
 
 private void kaksPrinting(double difpercent, String orgName, String ortoName){

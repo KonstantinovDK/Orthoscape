@@ -28,7 +28,7 @@ public class CyActivator extends AbstractCyActivator {
 		
 		Properties homologySearchTaskFactoryProps = new Properties();
 		homologySearchTaskFactoryProps.setProperty("preferredMenu","Apps.Orthoscape.Working");
-		homologySearchTaskFactoryProps.setProperty("title","Homologs analysis");
+		homologySearchTaskFactoryProps.setProperty("title","Homology analysis");
 		registerService(bc,homologySearchTaskFactory,TaskFactory.class, homologySearchTaskFactoryProps);
 		
 		// Homology grouping data initialization

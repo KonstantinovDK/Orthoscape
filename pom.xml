@@ -2,7 +2,9 @@
 	<modelVersion>4.0.0</modelVersion>
 	
 	<properties>
-		<bundle.symbolicName>orthoscape</bundle.symbolicName>
+		<Bundle-SymbolicName>orthoscape</Bundle-SymbolicName>
+		<Bundle-Name>Orthoscape</Bundle-Name>
+		<Bundle-Version>1.4</Bundle-Version>
 		<bundle.namespace>orthoscape</bundle.namespace>
 		<cytoscape.api.version>3.0.0</cytoscape.api.version>
 		
@@ -12,7 +14,7 @@
 
 	<groupId>orthoscape</groupId>
 	<packaging>bundle</packaging>
-	<version>1.1</version>
+	<version>1.102</version>
 	
 	<name>Orthoscape</name>
 

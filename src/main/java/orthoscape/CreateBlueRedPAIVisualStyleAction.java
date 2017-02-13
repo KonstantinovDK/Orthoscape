@@ -13,6 +13,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.swing.BoxLayout;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+
 import org.cytoscape.application.CyApplicationManager;
 import org.cytoscape.application.swing.AbstractCyAction;
 import org.cytoscape.model.CyColumn;
@@ -59,6 +64,15 @@ public class CreateBlueRedPAIVisualStyleAction extends AbstractCyAction {
 	 * @param e DOCUMENT ME!
 	 */
 	public void actionPerformed(ActionEvent e) {
+		
+		CyTable nodeTable = cyApplicationManagerServiceRef.getCurrentNetwork().getDefaultNodeTable();
+		if(nodeTable.getColumn("PAI") == null){
+			JPanel errorpanel = new JPanel();
+    		errorpanel.setLayout(new BoxLayout(errorpanel, BoxLayout.Y_AXIS));
+    		errorpanel.add(new JLabel("You have to count something in \"Working\" mode."));	
+    		JOptionPane.showMessageDialog(null, errorpanel);
+    		return;
+		}
 
 		// If the style already existed, remove it first
 		Iterator<?> it = vmmServiceRef.getAllVisualStyles().iterator();

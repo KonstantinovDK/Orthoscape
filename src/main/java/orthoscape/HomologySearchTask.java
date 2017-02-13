@@ -112,6 +112,10 @@ public class HomologySearchTask extends AbstractTask {
 		homologyBoxPanel.add(new JLabel("Put the homology identity value: "));
 		homologyBoxPanel.add(equalityField);
 		
+		String baseK = "1";
+		equalityField.setValue(baseK.trim());
+		homologyBoxPanel.add(equalityField);
+		
 		// Place to put SW-Score
 		JPanel SWhomologyBoxPanel = new JPanel();
 		SWhomologyBoxPanel.setLayout(new BoxLayout(SWhomologyBoxPanel, BoxLayout.X_AXIS));
@@ -119,8 +123,13 @@ public class HomologySearchTask extends AbstractTask {
 		SWhomologyBoxPanel.add(new JLabel("Put the Smith Waterman score value: "));
 		SWhomologyBoxPanel.add(SWequalityField);
 		
+		baseK = "1000";
+		SWequalityField.setValue(baseK.trim());
+		SWhomologyBoxPanel.add(SWequalityField);
+		
 		// Box to use local base
 		JCheckBox localbaseBox = new JCheckBox();
+		localbaseBox.setSelected(true);
 		JPanel checkBoxPanel = new JPanel();
 		checkBoxPanel.setLayout(new BoxLayout(checkBoxPanel, BoxLayout.X_AXIS));
 		checkBoxPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -140,6 +149,7 @@ public class HomologySearchTask extends AbstractTask {
 		
 		// Box to create output data to make reports
 		JCheckBox storagebaseBox = new JCheckBox();
+		storagebaseBox.setSelected(true);
 		JPanel storageBoxPanel = new JPanel();
 		storageBoxPanel.setLayout(new BoxLayout(storageBoxPanel, BoxLayout.X_AXIS));
 		storageBoxPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -435,16 +445,17 @@ public class HomologySearchTask extends AbstractTask {
 	    	BaseType = sep + "OrthologBase";
 	    }
 	                
-	    String tempgomoname = gomoname.replace(':', '_');
-	    File file = new File(mybasedirectory + sep + "Input" + BaseType + sep + tempgomoname + ".txt");
-	     	    String curURL = "";								// gene's url in string		   	
+	    String tempgomoname = gomoname.replace(':', '_');	     	    String curURL = "";								// gene's url in string		   	
     	int uselessaminoNumber = 0;						// DI important param (needs here only because of local base same for both algorithms)
     		    	
     	// If the local base exists 
-    	if ((inputmark) && (file.exists()) && (!updatemark)){
-    		curURL = OrthoscapeHelpFunctions.completeFileReader(file);
-    		String curlines[] = curURL.split("\n", 2);	// These 2 rows made to evade animoacid length
-   	    	curURL = curlines[1];						// The old parameter should be deleted in the next version
+    	if ((inputmark) && (!updatemark)){
+    		File file = new File(mybasedirectory + sep + "Input" + BaseType + sep + tempgomoname + ".txt");
+    	    if (file.exists()){
+	    		curURL = OrthoscapeHelpFunctions.completeFileReader(file);
+	    		String curlines[] = curURL.split("\n", 2);	// These 2 rows made to evade animoacid length
+	   	    	curURL = curlines[1];						// The old parameter should be deleted in the next version
+    	    }
     	}
     	// If the local base doesn't exist
     	else{
@@ -481,6 +492,7 @@ public class HomologySearchTask extends AbstractTask {
 	       	
        	    // If we want to create local base
 			if (inputmark || updatemark){
+				File file = new File(mybasedirectory + sep + "Input" + BaseType + sep + tempgomoname + ".txt");	    	    
 				try{
 					file.createNewFile();
 				}catch (IOException e2){ System.out.println("Can't create the file " + file.toString()); }
@@ -642,18 +654,20 @@ public class HomologySearchTask extends AbstractTask {
 	   		    	
 	   		    String tempcurOrgName = v_namedata.get(nameiter).replace(':', '_');
 	   	    	String sURL = "http://rest.kegg.jp/get/" + v_namedata.get(nameiter);	        
-	   		    File file = new File(mybasedirectory + sep + "Input" + sep + "Domains" + sep + tempcurOrgName + ".txt");	     
 	   		    String curURLagain;
 	   	    	String line = "";
 	   	    	
-	   	    	if ((inputmark) && (file.exists()) && (!updatemark)){
-	   	    		try{
-		   	    		BufferedReader reader = new BufferedReader(new FileReader(file.toString()));
-		   	    		while ((line = reader.readLine()) != null) {
-		   	    			curGeneDomens.add(line);
-		   				}
-		   	  	    	reader.close();
-	   	    		}catch (IOException e2){ System.out.println("Can't read the file " + file.toString());}
+	   	    	if ((inputmark) && (!updatemark)){
+	   	    		File file = new File(mybasedirectory + sep + "Input" + sep + "Domains" + sep + tempcurOrgName + ".txt");	     
+	   	    		if (file.exists()){
+		   	    		try{
+			   	    		BufferedReader reader = new BufferedReader(new FileReader(file.toString()));
+			   	    		while ((line = reader.readLine()) != null) {
+			   	    			curGeneDomens.add(line);
+			   				}
+			   	  	    	reader.close();
+		   	    		}catch (IOException e2){ System.out.println("Can't read the file " + file.toString());}
+	   	    		}
 	   	  	    }
 	   		    else{
 	   		       	curURLagain = OrthoscapeHelpFunctions.loadUrl(sURL);	
@@ -671,6 +685,7 @@ public class HomologySearchTask extends AbstractTask {
 	   		   	    
 	   		        // If we want to create local base
 	   		       	if (inputmark || updatemark){
+	   		       	File file = new File(mybasedirectory + sep + "Input" + sep + "Domains" + sep + tempcurOrgName + ".txt");	        	    		
 	   		       		try{
 	   				   		file.createNewFile();
 	   		       		}catch (IOException e2){ System.out.println("Can't create the file " + file.toString());}
@@ -688,17 +703,19 @@ public class HomologySearchTask extends AbstractTask {
 		 	    	
 		 	    	String tempcurOrtoName = currentgomologs.get(counter).replace(':', '_');
 		 	    	sURL = "http://rest.kegg.jp/get/" + currentgomologs.get(counter);	        
-		 		    file = new File(mybasedirectory + sep + "Input" + sep + "Domains" + sep + tempcurOrtoName + ".txt");
-		 	    	line = "";
+		 		    line = "";
 		
-		 	    	if ((inputmark) && (file.exists()) && (!updatemark)){
-		 	    		try{
-			     			BufferedReader reader = new BufferedReader(new FileReader(file.toString()));
-			     			while ((line = reader.readLine()) != null) {
-			     				curOrtoDomens.add(line);
-			 		   		}
-			   	       		reader.close();
-		 	    		}catch (IOException e2){ System.out.println("Can't read the file " + file.toString());}
+		 	    	if ((inputmark) && (!updatemark)){
+		 	    		File file = new File(mybasedirectory + sep + "Input" + sep + "Domains" + sep + tempcurOrtoName + ".txt");
+		 	    		if (file.exists()){
+			 	    		try{
+				     			BufferedReader reader = new BufferedReader(new FileReader(file.toString()));
+				     			while ((line = reader.readLine()) != null) {
+				     				curOrtoDomens.add(line);
+				 		   		}
+				   	       		reader.close();
+			 	    		}catch (IOException e2){ System.out.println("Can't read the file " + file.toString());}
+		 	    		}
 		 	       	}
 		 	       	else{
 		 	       		curURLagain = OrthoscapeHelpFunctions.loadUrl(sURL);
@@ -716,6 +733,7 @@ public class HomologySearchTask extends AbstractTask {
 		 		   	    
 			 	       	// If we want to create local base
 		 			   	if (inputmark || updatemark){
+		 			   		File file = new File(mybasedirectory + sep + "Input" + sep + "Domains" + sep + tempcurOrtoName + ".txt");
 		 			   		try{
 		 			   			file.createNewFile();
 		 			   		}catch (IOException e2){ System.out.println("Can't create the file " + file.toString());}

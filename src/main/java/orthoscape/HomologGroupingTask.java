@@ -3,6 +3,11 @@ package orthoscape;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.BoxLayout;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+
 import org.cytoscape.group.CyGroup;
 import org.cytoscape.group.CyGroupFactory;
 import org.cytoscape.model.CyColumn;
@@ -29,6 +34,14 @@ public class HomologGroupingTask extends AbstractTask {
 		if (network == null){
 			System.out.println("There is no network.");
 			return;
+		}
+		
+		if(nodeTable.getColumn("Homology Cluster") == null){
+			JPanel errorpanel = new JPanel();
+    		errorpanel.setLayout(new BoxLayout(errorpanel, BoxLayout.Y_AXIS));
+    		errorpanel.add(new JLabel("You have to launch homology analyis first"));	
+    		JOptionPane.showMessageDialog(null, errorpanel);
+    		return;
 		}
 						
  		CyColumn mysuidcolumn = nodeTable.getColumn("SUID");

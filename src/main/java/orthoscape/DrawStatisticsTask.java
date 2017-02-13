@@ -14,8 +14,12 @@ import java.util.List;
 import java.util.Map;
 
 import javax.imageio.ImageIO;
+import javax.swing.BoxLayout;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.work.AbstractTask;
@@ -45,6 +49,7 @@ public class DrawStatisticsTask extends AbstractTask {
     
 	File mybasedirectory;
 	String sep =  File.separator;
+	Boolean cancelled = false;
 	public DrawStatisticsTask(CyNetwork network){
 		// Form to choose the base
 		JFrame myframe = new JFrame();
@@ -66,6 +71,7 @@ public class DrawStatisticsTask extends AbstractTask {
 		else{
 		    // "Cancel" button option
 			System.out.println("Cancelled");
+			cancelled = true;
 			return;
 		}
 			          	   	
@@ -80,7 +86,11 @@ public class DrawStatisticsTask extends AbstractTask {
         uniqueTaxes = new ArrayList<Integer>();
 	}
 	
-	public void run(TaskMonitor monitor) {	
+	public void run(TaskMonitor monitor) {			
+		if (cancelled){
+			return;
+		};
+		
 		// Here we counting 5 current statistics. Every function launch will create their own Png graph
 		statisticCounter("Gene set PAI statistic",  "identity");
 		statisticCounter("Network PAI statistic",  "identity");
@@ -92,6 +102,7 @@ public class DrawStatisticsTask extends AbstractTask {
 		statisticCounter("Median statistic",  "SW-Score");
 		statisticCounter("Oldest statistic",  "SW-Score");
 		statisticCounter("Youngest statistic","SW-Score");
+
 		// Here we will create html's based on graphs we already create
 		reportsCreating();
 		RreportsCreating();
