@@ -54,6 +54,7 @@ public class DrawStatisticsTask extends AbstractTask {
 		// Form to choose the base
 		JFrame myframe = new JFrame();
 		JFileChooser dialog = new JFileChooser();
+		dialog.setDialogTitle("Choose local base directory");
 		dialog.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 		dialog.setAcceptAllFileFilterUsed(false); 
 	    
@@ -462,22 +463,27 @@ public class DrawStatisticsTask extends AbstractTask {
 		    	String sURL = "http://www.kegg.jp/dbget-bin/www_bget?" + alotoforgs.get(i);	        
 			    File file = new File(mybasedirectory + sep + "Input" + sep + "OrganismBase" + sep + alotoforgs.get(i) + ".txt");
 		    	
-		    	if (file.exists()){
-		  	    	curURLagain = OrthoscapeHelpFunctions.completeFileReader(file);
+			    if (alotoforgs.get(i).equals("con")){
+			    	curURLagain = "Bacteria; Proteobacteria; Alphaproteobacteria; Rhodobacterales; Rhodobacteraceae; Confluentimicrobium";
 			    }
-		    	else{      		 	    	
-		 			curURLagain = OrthoscapeHelpFunctions.loadUrl(sURL);
-		 	    	String[] curlines = OrthoscapeHelpFunctions.stringFounder(curURLagain, "Lineage");
-		 	    	curURLagain = curlines[1];
-		 	    				
-		 	       	String[] curlinesmore;
-		 	       	curlinesmore = curURLagain.split(">", 4);
-		 	       	curURLagain = curlinesmore[2];
-		        	
-		 	       	String[] curlinesless;
-		 	       	curlinesless = curURLagain.split("<", 2);
-		 	       	curURLagain = curlinesless[0];	
-		        } 	
+			    else{
+			    	if (file.exists()){
+			  	    	curURLagain = OrthoscapeHelpFunctions.completeFileReader(file);
+				    }
+			    	else{      		 	    	
+			 			curURLagain = OrthoscapeHelpFunctions.loadUrl(sURL);
+			 	    	String[] curlines = OrthoscapeHelpFunctions.stringFounder(curURLagain, "Lineage");
+			 	    	curURLagain = curlines[1];
+			 	    				
+			 	       	String[] curlinesmore;
+			 	       	curlinesmore = curURLagain.split(">", 4);
+			 	       	curURLagain = curlinesmore[2];
+			        	
+			 	       	String[] curlinesless;
+			 	       	curlinesless = curURLagain.split("<", 2);
+			 	       	curURLagain = curlinesless[0];	
+			        } 
+			    }
     			myTaxonomy.put(alotoforgs.get(i), curURLagain);
     	    }
 	    	      	    	

@@ -10,8 +10,10 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
@@ -110,27 +112,40 @@ public class CreateHeatMapPAIVisualStyleAction extends AbstractCyAction {
  					
  		// Organism's loading to get taxonomy row	    	
 	    String sURL = "http://www.kegg.jp/dbget-bin/www_bget?" + netstorage.get(0);
-	    String curURLagain = OrthoscapeHelpFunctions.loadUrl(sURL);
-
-		String[] curlines4;
-		while (curURLagain.length() != 0){ //цикл до упоминания строки с "Entry"
-		  	curlines4 = curURLagain.split("\n", 2);
-		    if (curlines4.length == 1){
-		       	break;
-		    }
-		    curURLagain = curlines4[1];
-		    if (curlines4[0].contains("Lineage")){
-		        break;
-		    }        	        
-		}
-	 	
-		String[] curlinesmore;
-		curlinesmore = curURLagain.split(">", 4);
-		curURLagain = curlinesmore[2];
-	       	
-		String[] curlinesless;
-		curlinesless = curURLagain.split("<", 2);
-		curURLagain = curlinesless[0];	
+	    String curURLagain;
+	    
+	    Map<String, String> badOrganisms = new HashMap<String, String>();		// Initialization of names not available to create on Windows
+		badOrganisms.put("con", "Bacteria; Proteobacteria; Alphaproteobacteria; Rhodobacterales; Rhodobacteraceae; Confluentimicrobium; Confluentimicrobium sp. EMB200-NS6");
+		badOrganisms.put("prn", "Bacteria; Bacteroidetes; Flavobacteriia; Flavobacteriales; Flavobacteriaceae; Polaribacter; Polaribacter reichenbachii 6Alg 8T");
+		
+	    
+		if (badOrganisms.containsKey(netstorage.get(0))){
+	    	curURLagain = badOrganisms.get(netstorage.get(0));
+	    }
+	    else{
+	    	curURLagain = OrthoscapeHelpFunctions.loadUrl(sURL);
+		    
+		    String[] curlines = OrthoscapeHelpFunctions.stringFounder(curURLagain, "Definition");	    	
+	    	String[] defStr = curlines[1].split("\n");
+	    	String defString = defStr[0];
+	    	String[] curlinesmore;
+	    	curlinesmore = defString.split(">", 4);
+	    	defString = curlinesmore[2];
+	    	curlinesmore = defString.split("<", 2);
+	    	defString = curlinesmore[0].trim();
+	    	curURLagain = curlines[1];
+	
+	    	curlines = OrthoscapeHelpFunctions.stringFounder(curURLagain, "Lineage");
+	    	curURLagain = curlines[1];
+		 	
+			curlinesmore = curURLagain.split(">", 4);
+			curURLagain = curlinesmore[2];
+		       	
+			String[] curlinesless;
+			curlinesless = curURLagain.split("<", 2);
+			curURLagain = curlinesless[0];	
+			curURLagain = curURLagain.trim() + "; " + defString;
+	    }
 		       	
 		String[] alltaxes = curURLagain.split(";");
 		List<String> taxstorage = new ArrayList<String>();

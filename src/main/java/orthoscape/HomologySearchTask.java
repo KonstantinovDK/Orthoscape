@@ -222,6 +222,7 @@ public class HomologySearchTask extends AbstractTask {
 			// Form to choose the base
 			JFrame myframe = new JFrame();
 			JFileChooser dialog = new JFileChooser();
+			dialog.setDialogTitle("Choose local base directory");
 			dialog.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 			dialog.setAcceptAllFileFilterUsed(false); 			
 			int returnValue = dialog.showOpenDialog(myframe);
@@ -447,15 +448,13 @@ public class HomologySearchTask extends AbstractTask {
 	                
 	    String tempgomoname = gomoname.replace(':', '_');	     	    String curURL = "";								// gene's url in string		   	
     	int uselessaminoNumber = 0;						// DI important param (needs here only because of local base same for both algorithms)
-    		    	
+    	
+    	File file = new File(mybasedirectory + sep + "Input" + BaseType + sep + tempgomoname + ".txt");
     	// If the local base exists 
-    	if ((inputmark) && (!updatemark)){
-    		File file = new File(mybasedirectory + sep + "Input" + BaseType + sep + tempgomoname + ".txt");
-    	    if (file.exists()){
-	    		curURL = OrthoscapeHelpFunctions.completeFileReader(file);
-	    		String curlines[] = curURL.split("\n", 2);	// These 2 rows made to evade animoacid length
-	   	    	curURL = curlines[1];						// The old parameter should be deleted in the next version
-    	    }
+    	if ((inputmark) && (file.exists()) && (!updatemark)){ 		
+    		curURL = OrthoscapeHelpFunctions.completeFileReader(file);
+    		String curlines[] = curURL.split("\n", 2);	// These 2 rows made to evade animoacid length
+   	    	curURL = curlines[1];						// The old parameter should be deleted in the next version
     	}
     	// If the local base doesn't exist
     	else{
@@ -492,7 +491,7 @@ public class HomologySearchTask extends AbstractTask {
 	       	
        	    // If we want to create local base
 			if (inputmark || updatemark){
-				File file = new File(mybasedirectory + sep + "Input" + BaseType + sep + tempgomoname + ".txt");	    	    
+				file = new File(mybasedirectory + sep + "Input" + BaseType + sep + tempgomoname + ".txt");	    	    
 				try{
 					file.createNewFile();
 				}catch (IOException e2){ System.out.println("Can't create the file " + file.toString()); }
@@ -657,17 +656,15 @@ public class HomologySearchTask extends AbstractTask {
 	   		    String curURLagain;
 	   	    	String line = "";
 	   	    	
-	   	    	if ((inputmark) && (!updatemark)){
-	   	    		File file = new File(mybasedirectory + sep + "Input" + sep + "Domains" + sep + tempcurOrgName + ".txt");	     
-	   	    		if (file.exists()){
-		   	    		try{
-			   	    		BufferedReader reader = new BufferedReader(new FileReader(file.toString()));
-			   	    		while ((line = reader.readLine()) != null) {
-			   	    			curGeneDomens.add(line);
-			   				}
-			   	  	    	reader.close();
-		   	    		}catch (IOException e2){ System.out.println("Can't read the file " + file.toString());}
-	   	    		}
+	   	    	File file = new File(mybasedirectory + sep + "Input" + sep + "Domains" + sep + tempcurOrgName + ".txt");	        	    		
+	   	    	if ((inputmark) && (file.exists()) && (!updatemark)){
+	   	    		try{
+		   	    		BufferedReader reader = new BufferedReader(new FileReader(file.toString()));
+		   	    		while ((line = reader.readLine()) != null) {
+		   	    			curGeneDomens.add(line);
+		   				}
+		   	  	    	reader.close();
+	   	    		}catch (IOException e2){ System.out.println("Can't read the file " + file.toString());}
 	   	  	    }
 	   		    else{
 	   		       	curURLagain = OrthoscapeHelpFunctions.loadUrl(sURL);	
@@ -685,7 +682,7 @@ public class HomologySearchTask extends AbstractTask {
 	   		   	    
 	   		        // If we want to create local base
 	   		       	if (inputmark || updatemark){
-	   		       	File file = new File(mybasedirectory + sep + "Input" + sep + "Domains" + sep + tempcurOrgName + ".txt");	        	    		
+	   		       	file = new File(mybasedirectory + sep + "Input" + sep + "Domains" + sep + tempcurOrgName + ".txt");	        	    		
 	   		       		try{
 	   				   		file.createNewFile();
 	   		       		}catch (IOException e2){ System.out.println("Can't create the file " + file.toString());}
@@ -705,17 +702,15 @@ public class HomologySearchTask extends AbstractTask {
 		 	    	sURL = "http://rest.kegg.jp/get/" + currentgomologs.get(counter);	        
 		 		    line = "";
 		
-		 	    	if ((inputmark) && (!updatemark)){
-		 	    		File file = new File(mybasedirectory + sep + "Input" + sep + "Domains" + sep + tempcurOrtoName + ".txt");
-		 	    		if (file.exists()){
-			 	    		try{
-				     			BufferedReader reader = new BufferedReader(new FileReader(file.toString()));
-				     			while ((line = reader.readLine()) != null) {
-				     				curOrtoDomens.add(line);
-				 		   		}
-				   	       		reader.close();
-			 	    		}catch (IOException e2){ System.out.println("Can't read the file " + file.toString());}
-		 	    		}
+		 		    file = new File(mybasedirectory + sep + "Input" + sep + "Domains" + sep + tempcurOrtoName + ".txt");	 	    		
+		 	    	if ((inputmark) && (file.exists()) && (!updatemark)){
+		 	    		try{
+			     			BufferedReader reader = new BufferedReader(new FileReader(file.toString()));
+			     			while ((line = reader.readLine()) != null) {
+			     				curOrtoDomens.add(line);
+			 		   		}
+			   	       		reader.close();
+		 	    		}catch (IOException e2){ System.out.println("Can't read the file " + file.toString());}
 		 	       	}
 		 	       	else{
 		 	       		curURLagain = OrthoscapeHelpFunctions.loadUrl(sURL);
@@ -733,7 +728,7 @@ public class HomologySearchTask extends AbstractTask {
 		 		   	    
 			 	       	// If we want to create local base
 		 			   	if (inputmark || updatemark){
-		 			   		File file = new File(mybasedirectory + sep + "Input" + sep + "Domains" + sep + tempcurOrtoName + ".txt");
+		 			   		file = new File(mybasedirectory + sep + "Input" + sep + "Domains" + sep + tempcurOrtoName + ".txt");
 		 			   		try{
 		 			   			file.createNewFile();
 		 			   		}catch (IOException e2){ System.out.println("Can't create the file " + file.toString());}

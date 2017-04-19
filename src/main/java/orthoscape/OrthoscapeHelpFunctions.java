@@ -32,11 +32,25 @@ public abstract class OrthoscapeHelpFunctions{
 			connection.disconnect();
 		    rd.close();
 		} catch (MalformedURLException e) {
-				System.out.println("Can't load URL");
-				System.exit(1);
+				System.out.println("Can't connect using URL: " + StrUrl);
+				// Wait 5 minutes and try again
+				try {
+				    Thread.sleep(300000);                 // 5 min
+				    loadUrl(StrUrl);
+				} catch(InterruptedException ex) {
+				    Thread.currentThread().interrupt();
+				}
+		//		System.exit(1);
 		} catch (IOException e) {
-				System.out.println("Can't write uploaded data to the local file");
-				System.exit(1);
+				System.out.println("Can't get input stream from url: " + StrUrl);
+				// Wait 5 minutes and try again
+//				try {
+//				    Thread.sleep(300000);                 // 5 min
+//				    loadUrl(StrUrl);
+//				} catch(InterruptedException ex) {
+//				    Thread.currentThread().interrupt();
+//				}
+		//		System.exit(1);
 		}
 		return result.toString();
 	}

@@ -1,10 +1,10 @@
 Manifest-Version: 1.0
 Bundle-SymbolicName: 
 Bundle-Name: Orthoscape
-Bundle-Version: 1.103
+Bundle-Version: 1.105
 Built-By: MustafinZS
 Bundle-ManifestVersion: 2
-Bnd-LastModified: 1486973613399
+Bnd-LastModified: 1492589849465
 Bundle-Activator: orthoscape.CyActivator
 Import-Package: javax.imageio,javax.swing,javax.swing.text,org.cytosca
  pe.application;version="[3.0,4)",org.cytoscape.application.swing;vers
