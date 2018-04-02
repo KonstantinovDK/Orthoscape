@@ -4,9 +4,12 @@ import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -47,6 +50,9 @@ public class DrawStatisticsTask extends AbstractTask {
     List<Integer> uniqueTaxes;							// Array with number of taxons. Not unique at all :) Just to the same name pattern
 //    Integer[] colors = {3,8,12,19,31,33,43,48,53,57,62,63,66,76,84,86,91,101,102,109,116};	// Colors good enough to use in R violin plots 
     
+    double PAIvaltoExcel;
+    double PAIvartoExcel;
+    
 	File mybasedirectory;
 	String sep =  File.separator;
 	Boolean cancelled = false;
@@ -85,6 +91,9 @@ public class DrawStatisticsTask extends AbstractTask {
         uniqueRNames = new ArrayList<String>();
         uniqueOrgs = new ArrayList<String>();
         uniqueTaxes = new ArrayList<Integer>();
+        
+        PAIvaltoExcel = 0;
+        PAIvartoExcel = 0;
 	}
 	
 	public void run(TaskMonitor monitor) {			
@@ -107,6 +116,7 @@ public class DrawStatisticsTask extends AbstractTask {
 		// Here we will create html's based on graphs we already create
 		reportsCreating();
 		RreportsCreating();
+		PAITablesCreating();
 	}
 		
 	public void statisticCounter(String statname, String threshold){
@@ -134,6 +144,8 @@ public class DrawStatisticsTask extends AbstractTask {
         	// source files must have 4 blocks in their names separated by "___".
         	String[] namedatas = fileSplitter[fileSplitter.length-1].split("___");
         	
+        	String tempID = "";
+        	String tempSW = "";
         	if (namedatas.length < 4){
         		// Wrong source file. If we are here then program bugged on source files creating step.
         	}
@@ -146,10 +158,12 @@ public class DrawStatisticsTask extends AbstractTask {
         		
         		String curid=namedatas[namedatas.length-2];
         		String[] datas = curid.split("=");
+        		tempID = datas[1];
         		Double tempidentity = Double.parseDouble(datas[1]);
         		curidentity = (int) (100*tempidentity);
         		curid=namedatas[namedatas.length-1];
         		datas = curid.split("=");
+        		tempSW = datas[1].replace(".txt", "");
         		String newdata = datas[1].replace(".txt", "");
         		curSWScore = Integer.parseInt(newdata);    
         	}
@@ -157,10 +171,12 @@ public class DrawStatisticsTask extends AbstractTask {
             	// Good file
         		String curid=namedatas[2];
         		String[] datas = curid.split("=");
+        		tempID = datas[1];
         		Double tempidentity = Double.parseDouble(datas[1]);
         		curidentity = (int) (100*tempidentity);
         		curid=namedatas[3];
         		datas = curid.split("=");
+        		tempSW = datas[1].replace(".txt", "");
         		String newdata = datas[1].replace(".txt", "");
         		curSWScore = Integer.parseInt(newdata);       		
         	}             
@@ -209,11 +225,19 @@ public class DrawStatisticsTask extends AbstractTask {
         		if (alotofnames.get(ic).equals(curnetname) && alotoforgs.get(ic).equals(curorg)){
         			double statistic=0;
         			
-        			if (statname.equals("Gene set PAI statistic")){           			
+        			if (statname.equals("Gene set PAI statistic")){  
+        				double sumx2 = 0;
+	    				double sum = 0;
             			for (int i=1; i<taxdata.size(); i++){
             				statistic+=taxdata.get(i)*i;
+            				
+            				// To count variance
+	        				sumx2 += taxdata.get(i)*i*i;
+	        				sum+=taxdata.get(i)*i;
             			}
             			statistic = statistic/totalsum;
+            			PAIvaltoExcel = statistic;
+	        			PAIvartoExcel = Math.sqrt((sumx2 - sum*sum/totalsum)/totalsum);
         			}
         			if (statname.equals("Network PAI statistic")){           			
             			statistic = TDIweighted;
@@ -272,11 +296,19 @@ public class DrawStatisticsTask extends AbstractTask {
     			
     			double statistic=0;
     			
-    			if (statname.equals("Gene set PAI statistic")){           			
+    			if (statname.equals("Gene set PAI statistic")){    
+    				double sumx2 = 0;
+    				double sum = 0;
         			for (int i=1; i<taxdata.size(); i++){
         				statistic+=taxdata.get(i)*i;
+        				
+        				// To count variance
+        				sumx2 += taxdata.get(i)*i*i;
+        				sum += taxdata.get(i)*i;
         			}
         			statistic = statistic/totalsum;
+        			PAIvaltoExcel = statistic;
+        			PAIvartoExcel = Math.sqrt((sumx2 - sum*sum/totalsum)/totalsum);
     			}
     			if (statname.equals("Network PAI statistic")){           			
         			statistic = TDIweighted;
@@ -324,6 +356,60 @@ public class DrawStatisticsTask extends AbstractTask {
     			}
     			alotofdata.add(serie);    
     		}
+        	// New section to print PAI and PAI Variance to .txt tab separated file
+	        if ((statname.equals("Gene set PAI statistic")) && (threshold.equals("identity"))){
+	        	File dir = new File(mybasedirectory + sep + "Output" + sep + "Pictures and reports" + sep + curorg + sep + "Excel stats" + sep);
+		    	if (!dir.isDirectory()){
+				    dir.mkdir();
+			   	}
+		    	
+		    	try{
+	//		    	File curExcelFile = new File(mybasedirectory + sep + "Output" + sep + "Pictures and reports" + sep + curorg + sep + "Excel stats" + sep + "identity=" + tempID + "_SW-Score=" + tempSW + ".txt");
+			    	String fileName = mybasedirectory + sep + "Output" + sep + "Pictures and reports" + sep + curorg + sep + "Excel stats" + sep + "PAI___identity=" + tempID + "_SW-Score=" + tempSW + ".txt";
+		        	PrintWriter PAItoExcel = new PrintWriter(new OutputStreamWriter(new FileOutputStream(fileName, true)));
+		        	PAItoExcel.println(curnetname + "\t" + PAIvaltoExcel + "\t" + (int)totalsum + "\t" + PAIvartoExcel);
+		        	PAItoExcel.close();
+		        	
+		        	String DIfilename = curfilename.replace("source", "PamlDI");
+		        	File DIfile = new File(DIfilename);
+		        	if (DIfile.exists()){
+		        		double nonzeros = 0;
+		        		int total = 0;
+		        		double DIsum = 0;
+		        		BufferedReader DIreader = new BufferedReader(new FileReader(DIfile.toString()));
+		        		String DIline = DIreader.readLine();
+		        		if (DIline != null){
+			  	       		String[] DIsplit = DIline.split("\t"); 
+					   		while (!DIsplit[2].equals("0.0")){
+					   			nonzeros++;
+					   			total++;
+					   			DIsum += Double.parseDouble(DIsplit[2]);
+					   			DIline = DIreader.readLine();
+					   			if (DIline == null){
+					   				break;
+					   			}
+					   			DIsplit = DIline.split("\t"); 				   			
+					   		}
+					   		while (DIline != null){
+					   			total++;
+					   			DIline = DIreader.readLine();
+					   		}				   		
+					   	}	
+			  	       	DIreader.close();
+			  	       				  	       	
+			        	fileName = mybasedirectory + sep + "Output" + sep + "Pictures and reports" + sep + curorg + sep + "Excel stats" + sep + "DIbool___identity=" + tempID + "_SW-Score=" + tempSW + ".txt";
+			        	PrintWriter DIbooltoExcel = new PrintWriter(new OutputStreamWriter(new FileOutputStream(fileName, true)));
+			        	DIbooltoExcel.println(curnetname + "\t" + nonzeros + "\t" + total + "\t" + nonzeros/total);
+			        	DIbooltoExcel.close();
+			        	
+			        	fileName = mybasedirectory + sep + "Output" + sep + "Pictures and reports" + sep + curorg + sep + "Excel stats" + sep + "DIdouble___identity=" + tempID + "_SW-Score=" + tempSW + ".txt";
+			        	PrintWriter DIdoubletoExcel = new PrintWriter(new OutputStreamWriter(new FileOutputStream(fileName, true)));
+			        	DIdoubletoExcel.println(curnetname + "\t" + DIsum + "\t" + total + "\t" + DIsum/total);
+			        	DIdoubletoExcel.close();
+		        	}
+		        	
+		    	}catch (IOException e2){ System.out.println("Can't create am Excel statistics file");; }
+	        }
         }    
         // Make the list of organisms only
         List<String> alotofuniqueorgs = new ArrayList<String>();
@@ -813,5 +899,122 @@ public class DrawStatisticsTask extends AbstractTask {
         	curIDSWreport.close();
         }   
         emptyStream.close();
+	}
+	
+	public void PAITablesCreating(){
+
+		// Find all files in work directory
+		File workdir = new File(mybasedirectory + sep + "Output" + sep + "Pictures and reports" + sep);
+		ArrayList<File> filesInDirectory = new ArrayList<File>();
+        OrthoscapeHelpFunctions.getListFiles(filesInDirectory, workdir.toString());
+        
+        String oldNetworkName = "oldNetworkName";
+        List<String> currentFileCompleteTable = new ArrayList<String>();
+        String curorg = "";
+        // Filter them to find only bar charts (source) data files
+        for (int counter=filesInDirectory.size()-1; counter>=0; counter--){	        	
+        	String curfilename = filesInDirectory.get(counter).toString();
+        	if (!curfilename.contains("___PAI___")){
+        		continue;
+        	}
+
+        	String[] fileSplitter;
+        	fileSplitter = curfilename.split(sep+sep);
+        			        	
+        	String curnetname = fileSplitter[fileSplitter.length-2];
+        	curorg = fileSplitter[fileSplitter.length-3];
+        	double curidentity=0;
+ //       	int curSWScore=0;
+        	
+        	if (!curnetname.equals(oldNetworkName)){
+        		if (currentFileCompleteTable.size() != 0){
+        			// Print the identity based table of genes with PAI into one file
+                	String fileName = mybasedirectory + sep + "Output" + sep + "Pictures and reports" + sep + curorg + sep + oldNetworkName + sep + oldNetworkName + "_completePAITable.txt";
+                	try{
+                		PrintStream completeFile = new PrintStream(fileName);
+                		for (int i=0; i<currentFileCompleteTable.size(); i++){
+                			completeFile.println(currentFileCompleteTable.get(i));
+                		}
+                		completeFile.close();
+                	}catch (IOException e2){ System.out.println("Can't create completeTable file");}
+
+        			currentFileCompleteTable.clear();
+        		}
+        		oldNetworkName = curnetname;
+        	} 
+        	// source files must have 4 blocks in their names separated by "___".
+        	String[] namedatas = fileSplitter[fileSplitter.length-1].split("___");
+        	
+        	if (namedatas.length > 4){
+        		// If we are here then network name contains "___". Theoretically possible...
+        		for (int i=0; i<namedatas.length-3; i++){
+        			curnetname += namedatas[i] + "___";
+        		}
+        		curnetname += namedatas[namedatas.length-3];
+        		
+        		String curid=namedatas[namedatas.length-2];
+        		String[] datas = curid.split("=");
+        		curidentity = Double.parseDouble(datas[1]);
+        		curid=namedatas[namedatas.length-1];
+        		datas = curid.split("=");
+ //       		String newdata = datas[1].replace(".txt", "");
+ //       		curSWScore = Integer.parseInt(newdata);    
+        	}
+        	if (namedatas.length == 4){
+            	// Good file
+        		String curid=namedatas[2];
+        		String[] datas = curid.split("=");
+        		curidentity = Double.parseDouble(datas[1]);
+        		curid=namedatas[3];
+        		datas = curid.split("=");
+ //       		String newdata = datas[1].replace(".txt", "");
+ //       		curSWScore = Integer.parseInt(newdata);       		
+        	}    
+        	
+        	String line = "";
+       // 	List<String> currentGene = new ArrayList<String>();
+      //  	List<String> currentPAI = new ArrayList<String>();
+        	
+        	List<String> currentFile = new ArrayList<String>();
+        	try{
+	       		BufferedReader reader = new BufferedReader(new FileReader(filesInDirectory.get(counter).toString()));
+	  	       	while ((line = reader.readLine()) != null) {
+			//   		String[] curLine = line.split("\t");
+			//   		currentGene.add(curLine[0]+"\t"+curLine[1]);
+			//   		currentGene.sort(null);
+	  	       		currentFile.add(line);
+			   	}	
+	  	       	reader.close();
+        	}catch (IOException e2){ System.out.println("Can't read the file " + filesInDirectory.get(counter).toString());}
+  	       	
+        	currentFile.sort(null);
+        	if (currentFileCompleteTable.size() == 0){
+        		currentFileCompleteTable.add("\t\tidentity\t");
+        		currentFileCompleteTable.add("gene ID\tLabel\t\t");
+        		for (int liner=0; liner<currentFile.size(); liner++){
+        			String curLine[] = currentFile.get(liner).split("\t");
+        			currentFileCompleteTable.add(curLine[0] +"\t" + curLine[1] + "\t\t");      		        	
+        		}
+        	}
+        	currentFileCompleteTable.set(0, currentFileCompleteTable.get(0) + curidentity + "\t");
+        	for (int liner=0; liner<currentFile.size(); liner++){
+    			String curLine[] = currentFile.get(liner).split("\t");
+    			currentFileCompleteTable.set(2+liner, currentFileCompleteTable.get(2+liner) + curLine[2].substring(0, 2) + "\t");    		        	
+    		}   	      	
+        }
+        
+        if (currentFileCompleteTable.size() != 0){
+			// Print the identity based table of genes with PAI into one file
+        	String fileName = mybasedirectory + sep + "Output" + sep + "Pictures and reports" + sep + curorg + sep + oldNetworkName + sep + oldNetworkName + "_completePAITable.txt";
+        	try{
+        		PrintStream completeFile = new PrintStream(fileName);
+        		for (int i=0; i<currentFileCompleteTable.size(); i++){
+        			completeFile.println(currentFileCompleteTable.get(i));
+        		}
+        		completeFile.close();
+        	}catch (IOException e2){ System.out.println("Can't create completeTable file");}
+
+			currentFileCompleteTable.clear();
+		}    
 	}
 }

@@ -51,7 +51,7 @@ public class CreateBlueRedPAIVisualStyleAction extends AbstractCyAction {
 	public CreateBlueRedPAIVisualStyleAction(CyApplicationManager cyApplicationManagerServiceRef, VisualMappingManager vmmServiceRef, VisualStyleFactory visualStyleFactoryServiceRef, 
 			VisualMappingFunctionFactory vmfFactoryC,VisualMappingFunctionFactory vmfFactoryD,VisualMappingFunctionFactory vmfFactoryP){
 		super("PAI Based");
-		setPreferredMenu("Apps.Orthoscape.4) Coloring.Blue-Red Style");
+		setPreferredMenu("Apps.Orthoscape.3) Coloring.Blue-Red Style");
 
 		this.cyApplicationManagerServiceRef = cyApplicationManagerServiceRef;
 		this.visualStyleFactoryServiceRef = visualStyleFactoryServiceRef;

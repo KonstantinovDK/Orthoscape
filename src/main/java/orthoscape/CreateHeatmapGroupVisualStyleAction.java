@@ -39,7 +39,7 @@ public class CreateHeatmapGroupVisualStyleAction extends AbstractCyAction {
 	public CreateHeatmapGroupVisualStyleAction(CyApplicationManager cyApplicationManagerServiceRef, VisualMappingManager vmmServiceRef, VisualStyleFactory visualStyleFactoryServiceRef, 
 			VisualMappingFunctionFactory vmfFactoryC,VisualMappingFunctionFactory vmfFactoryD,VisualMappingFunctionFactory vmfFactoryP){
 		super("Homology Based");
-		setPreferredMenu("Apps.Orthoscape.4) Coloring.Heatmap Style");
+		setPreferredMenu("Apps.Orthoscape.3) Coloring.Heatmap Style");
 
 		this.cyApplicationManagerServiceRef = cyApplicationManagerServiceRef;
 		this.visualStyleFactoryServiceRef = visualStyleFactoryServiceRef;

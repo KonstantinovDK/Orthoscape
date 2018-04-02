@@ -99,11 +99,13 @@ public class HomologySearchTask extends AbstractTask {
 		String[] homoType = {"Paralogs search", "Orthologs search"};
 		JComboBox<String> homologyBox = new JComboBox<String>(homoType); 			
 		
-		JPanel textFieldPanel = new JPanel();
-		textFieldPanel.setLayout(new BoxLayout(textFieldPanel, BoxLayout.X_AXIS));
-		textFieldPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-		textFieldPanel.add(new JLabel("Choose the homology type: "));
-		textFieldPanel.add(homologyBox);
+		// There is no use to count different genes in one network.
+		// It's also can be incorrect since KEGG shows only the best ortholog and we couldn't group a lot of them.	
+//		JPanel textFieldPanel = new JPanel();
+//		textFieldPanel.setLayout(new BoxLayout(textFieldPanel, BoxLayout.X_AXIS));
+//		textFieldPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+//		textFieldPanel.add(new JLabel("Choose the homology type: "));
+//		textFieldPanel.add(homologyBox);
 	
 		// Place to put identity
 		JPanel homologyBoxPanel = new JPanel();
@@ -123,7 +125,7 @@ public class HomologySearchTask extends AbstractTask {
 		SWhomologyBoxPanel.add(new JLabel("Put the Smith Waterman score value: "));
 		SWhomologyBoxPanel.add(SWequalityField);
 		
-		baseK = "1000";
+		baseK = "0";
 		SWequalityField.setValue(baseK.trim());
 		SWhomologyBoxPanel.add(SWequalityField);
 		
@@ -183,7 +185,7 @@ public class HomologySearchTask extends AbstractTask {
 		domenArea.setAlignmentX(Component.LEFT_ALIGNMENT);	
 		
 		// Form filling
-		p.add(textFieldPanel);
+//		p.add(textFieldPanel);
 		p.add(homologyBoxPanel);
 		p.add(SWhomologyBoxPanel);
 		p.add(checkBoxPanel);
@@ -208,7 +210,7 @@ public class HomologySearchTask extends AbstractTask {
 		// Form reading
 		this.equality = Double.parseDouble(equalityField.getText());
 		this.SWScore = Integer.parseInt(SWequalityField.getText().trim());
-		this.homologyType = homologyBox.getSelectedItem().toString();
+		this.homologyType = "Paralogs search"; // homologyBox.getSelectedItem().toString();
 
 		this.domensNumber = Integer.parseInt(domensField.getText().trim());
 		

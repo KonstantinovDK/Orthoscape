@@ -55,23 +55,30 @@ public class CyActivator extends AbstractCyActivator {
 		ageSearchTaskFactoryProps.setProperty("title","PAI and DI analysis");
 		registerService(bc,ageSearchTaskFactory,TaskFactory.class, ageSearchTaskFactoryProps);
 		
-		// Homology grouping data initialization
-		HomologGroupingTaskFactory homologGroupingTaskFactory = new HomologGroupingTaskFactory(cyApplicationManagerServiceRef);
-		homologGroupingTaskFactory.setcyGroupCreator(globalcyGroupCreator);
+		// Grouping had been broken after one of the Cytoscape updates
+		// The gouped nodes are not showing in the network view or it only shown one of all nodes
+		// Can't fix from the first time. It seems groups are correct - system see all groups, create and collapse/ungroup them correctly but they are
+		// not in the network view.
+		// Will fix later or abandon this ability since it still have no any usecases.
 		
-		Properties homologGroupingTaskFactoryProps = new Properties();
-		homologGroupingTaskFactoryProps.setProperty("preferredMenu","Apps.Orthoscape.3) Grouping");
-		homologGroupingTaskFactoryProps.setProperty("title","Group the homologs");
-		registerService(bc,homologGroupingTaskFactory,TaskFactory.class, homologGroupingTaskFactoryProps);
+		// Homology grouping data initialization
+//		HomologGroupingTaskFactory homologGroupingTaskFactory = new HomologGroupingTaskFactory(cyApplicationManagerServiceRef);
+//		homologGroupingTaskFactory.setcyGroupCreator(globalcyGroupCreator);
+//		homologGroupingTaskFactory.setcyGroupManager(globalcyGroupManager);
+		
+//		Properties homologGroupingTaskFactoryProps = new Properties();
+//		homologGroupingTaskFactoryProps.setProperty("preferredMenu","Apps.Orthoscape.3) Grouping");
+//		homologGroupingTaskFactoryProps.setProperty("title","Group the homologs");
+//		registerService(bc,homologGroupingTaskFactory,TaskFactory.class, homologGroupingTaskFactoryProps);
 		
 		// Homology ungrouping data initialization
-		HomologUngroupingTaskFactory homologUngroupingTaskFactory = new HomologUngroupingTaskFactory(cyApplicationManagerServiceRef);
-		homologUngroupingTaskFactory.setcyGroupManager(globalcyGroupManager);
+//		HomologUngroupingTaskFactory homologUngroupingTaskFactory = new HomologUngroupingTaskFactory(cyApplicationManagerServiceRef);
+//		homologUngroupingTaskFactory.setcyGroupManager(globalcyGroupManager);
 		
-		Properties homologUngroupingTaskFactoryProps = new Properties();
-		homologUngroupingTaskFactoryProps.setProperty("preferredMenu","Apps.Orthoscape.3) Grouping");
-		homologUngroupingTaskFactoryProps.setProperty("title","Ungroup the homologs");
-		registerService(bc,homologUngroupingTaskFactory,TaskFactory.class, homologUngroupingTaskFactoryProps);
+//		Properties homologUngroupingTaskFactoryProps = new Properties();
+//		homologUngroupingTaskFactoryProps.setProperty("preferredMenu","Apps.Orthoscape.3) Grouping");
+//		homologUngroupingTaskFactoryProps.setProperty("title","Ungroup the homologs");
+//		registerService(bc,homologUngroupingTaskFactory,TaskFactory.class, homologUngroupingTaskFactoryProps);
 							
 		// Visual stiles data initialization (common to all styles)
 		VisualMappingManager vmmServiceRef = getService(bc,VisualMappingManager.class);		
@@ -123,7 +130,7 @@ public class CyActivator extends AbstractCyActivator {
 		
 		Properties drawStatisticsTaskFactoryProps = new Properties();
 		drawStatisticsTaskFactoryProps.setProperty("preferredMenu","Apps.Orthoscape");
-		drawStatisticsTaskFactoryProps.setProperty("title","5) Reporting");
+		drawStatisticsTaskFactoryProps.setProperty("title","4) Reporting");
 		registerService(bc,drawStatisticsTaskFactory,TaskFactory.class, drawStatisticsTaskFactoryProps);
 	}
 }

@@ -1,6 +1,8 @@
 package orthoscape;
 
+import java.awt.Color;
 import java.awt.Component;
+import java.awt.Paint;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -42,6 +44,9 @@ import org.cytoscape.model.CyColumn;
 import org.cytoscape.model.CyEdge;
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.model.CyRow;
+import org.cytoscape.view.presentation.property.BasicVisualLexicon;
+import org.cytoscape.view.vizmap.mappings.BoundaryRangeValues;
+import org.cytoscape.view.vizmap.mappings.ContinuousMapping;
 import org.cytoscape.work.AbstractTask;
 import org.cytoscape.work.TaskMonitor;
 import org.cytoscape.model.CyTable;
@@ -104,17 +109,24 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	Double[] pamlSumm;				// current DI values of every node
 	Double[] pamlSummx2;			// current DI*DI values of every node
 	Integer[] pamlEmpty;			// number of pairs (gene-ortholog) with "infinity" returned by PAML 
+	Integer[] pamlNumber;			// number of pairs (gene-ortholog) total analysed by PAML
+	String[] DIType;				// Type of Ka/Ks ratio (0/0, 0/N, N/N etc.)
 	
 	Map<String, String> badOrganisms; // List of taxon codes not available to create on Windows (for example "con")
 	
 	ArrayList<ArrayList<String>> geneorgTable;
 	ArrayList<String> geneRow;
 	ArrayList<String> orgColumn;
+	
+	int red;
+	int green;
+	int blue;
 
 	// PAML fields
 	private double LWL85value;
 	private double LWL85mvalue;
 	private double LPB93value;
+	private String DItype;
 	
 	// Kaks calculator's fields
 	// NG - Method variables.
@@ -191,7 +203,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 		SWhomologyBoxPanel.add(new JLabel("Put the Smith Waterman score value: "));
 		SWhomologyBoxPanel.add(SWequalityField);
 		
-		baseK = "1000";
+		baseK = "0";
 		SWequalityField.setValue(baseK.trim());
 		SWhomologyBoxPanel.add(SWequalityField);
 		
@@ -631,6 +643,14 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 			else {
 				nodeTable.createColumn("PAML Variance", Double.class, false);
 			}	
+			
+			if(nodeTable.getColumn("DI Type")!= null){
+				nodeTable.deleteColumn("DI Type");	
+				nodeTable.createColumn("DI Type", String.class, false);
+			}
+			else {
+				nodeTable.createColumn("DI Type", String.class, false);
+			}	
 		}
 			
  		CyColumn mysuidcolumn = nodeTable.getColumn("SUID");
@@ -647,6 +667,8 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
  		this.pamlSumm = new Double[nodeTable.getRowCount()];	
  		this.pamlSummx2 = new Double[nodeTable.getRowCount()];	
  		this.pamlEmpty = new Integer[nodeTable.getRowCount()]; 
+ 		this.pamlNumber = new Integer[nodeTable.getRowCount()];
+ 		this.DIType = new String[nodeTable.getRowCount()]; 
  		
 		for (int i=0; i < nodeTable.getRowCount(); i++){						
 		    CyRow nodeRow = nodeTable.getRow(suidstorage.get(i)); 
@@ -660,6 +682,8 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
     		pamlSumm[i] = 0d;
     		pamlSummx2[i] = 0d;
     		pamlEmpty[i] = 0;
+    		pamlNumber[i] = 0;
+    		DIType[i] = "";
 		    
 			// Check if the network is BioPax
 			if(nodeTable.getColumn("NCBI GENE") != null){
@@ -686,7 +710,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	    		allAgesPower[i] = 0;
 	    		continue;
 	    	}
-	    	if(namedata.contains(":ko")){		        
+	    	if(namedata.contains(":ko") || namedata.contains("none")){		        
 	    		allAges[i] = "No data";
 	    		allAgesPower[i] = 0;
 	    		continue;
@@ -707,7 +731,8 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 		    
 		    // Loading the page with data about orthologs
 		    for (int j=0; j < v_namedata.size(); j++){
-   	     		   	     
+		    	
+  	     		   	     
 	   	    	 String sURL = "http://www.kegg.jp/ssdb-bin/ssdb_best?org_gene=" + v_namedata.get(j);	   	    	 				              
 			     String tempgomoname = v_namedata.get(j).replace(':', '_');
 			     String curURL = "";
@@ -836,13 +861,21 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 		       	}
 	       	}
 	       	if (this.Pamlmark){
-		       	if (allAgesPower[i] == 0){
+		       	if ( (pamlNumber[i] == 0) || (pamlNumber[i]==pamlEmpty[i]) ){
 		       		nodeRow.set("PAML Average", 0.d);
 		       		nodeRow.set("PAML Variance", 0.d);
+		       		nodeRow.set("DI Type", "There are no orthologs");
 		       	}
 		       	else{
-		       		nodeRow.set("PAML Average", pamlSumm[i]/(allAgesPower[i]-pamlEmpty[i]));
-		       		nodeRow.set("PAML Variance", (pamlSummx2[i] - pamlSumm[i]*pamlSumm[i]/(allAgesPower[i]-pamlEmpty[i]))/(allAgesPower[i]-pamlEmpty[i]));
+		       	//	nodeRow.set("PAML Average", pamlSumm[i]/(allAgesPower[i]-pamlEmpty[i]));
+		       		nodeRow.set("PAML Average", pamlSumm[i]/(pamlNumber[i]-pamlEmpty[i]));
+		       		nodeRow.set("PAML Variance", (pamlSummx2[i] - pamlSumm[i]*pamlSumm[i]/(pamlNumber[i]-pamlEmpty[i]))/(pamlNumber[i]-pamlEmpty[i]));
+		       		if (DIType[i].equals("")){
+		       			nodeRow.set("DI Type", "There are no orthologs");
+		       		}
+		       		else{
+		       			nodeRow.set("DI Type", DIType[i]);
+		       		}
 		       	}
 	       	}
 	    }
@@ -958,12 +991,16 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	 	netstorage.set(0, netstorage.get(0).replace("<", "__"));
 	 	netstorage.set(0, netstorage.get(0).replace("|", "__"));
 	 	
+	 	String pathwayID = "";
+	 	
 	 	// reducing the number of symbols in network name to 35 (+ KEGGID if necessary) 
 	 	if (netstorage.get(0).length() > 40){
 	 		netstorage.set(0, netstorage.get(0).substring(0, 35) + "..etc");
 	 	}
 	 	
-	 	int notApplicationedNetwork = 0;	
+	 	
+	 	int notApplicationedNetwork = 0;
+	 	boolean KEGGnetwork = false;
  	 	String netName = "";
  	 	if (networksTable.getColumn("BIOPAX_NETWORK") != null){
  	 		netName = netstorage.get(0);
@@ -981,7 +1018,9 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
  		    CyColumn numbercolumn = networksTable.getColumn("number");
  	 	 	List<String> numberstorage = numbercolumn.getValues(String.class);
  	 	 	netName = netstorage.get(0) + "_KEGGID=" + numberstorage.get(0);
+ 	 	 	pathwayID = numberstorage.get(0);
  	 	 	notApplicationedNetwork = 1;
+ 	 	 	KEGGnetwork = true;
  	 	}
  	 	if (notApplicationedNetwork == 0){
  	 		netName = netstorage.get(0);
@@ -993,6 +1032,15 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	   	}
 	    File deseaseDir = new File(mybasedirectory + sep + "Output" + sep + "Pictures and reports" + sep + orgstorage.get(0) + sep + netName + sep);
 	   
+	    // reducing the number of symbols in network name to 35 (+ KEGGID if necessary) 
+	    while ((deseaseDir.toString().length() + netName.length()) > 210){
+	 		if (netName.length() == 3){
+	 			break;
+	 		}
+	 		netName = netName.substring(0, netName.length()-1);
+	 	}
+
+	 	 	
     	if (!deseaseDir.isDirectory()){
     		deseaseDir.mkdir();
 	   	}
@@ -1108,6 +1156,39 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
         
         
         
+     // Gene - PAI table.
+        PrintStream PAIurl = null;
+        Map<String, String> PAIColors = null;
+        if (KEGGnetwork){
+			try{
+				PAIurl = new PrintStream(deseaseDir + sep
+				+ netName + "___PAIurl___identity=" + stridentity + "___SW-Score=" + strSW + ".txt");
+			}catch (FileNotFoundException e) {
+				System.out.println("Can't create PAI file");
+				PAIurl = emptyStream;
+			}
+			
+			PAIurl.print("http://www.kegg.jp/kegg-bin/show_pathway?" + orgstorage.get(0) + pathwayID + "/");
+              
+			PAIColors = new HashMap<String, String>();
+			
+			int realTaxSize = myTaxonomy.size()-4;
+			for (Map.Entry<String, Integer> entry : myTaxonomy.entrySet()) {
+		       String curTax = entry.getKey();
+		       if (curTax.contains("_")){
+		    	   String[] taxWeight = curTax.split("_");
+		    	   int val = (realTaxSize - 1) - Integer.parseInt(taxWeight[0]);
+		    	   float value = (float)val/realTaxSize;
+		    	   getHeatMapColor(value);
+		    	   Color curC = new Color(red,green,blue);
+		   		   int curCode = curC.getRGB();
+		   		   PAIColors.put(curTax, Integer.toHexString(curCode).substring(2, Integer.toHexString(curCode).length()));
+		       }
+		       else{
+		    	   PAIColors.put(curTax, "ffffff");
+		       }
+		    }
+        }		  
         // Gene - PAI table.
         PrintStream outPAI = null;
 		try{
@@ -1122,7 +1203,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
     	
         for (int i=0; i<suidstorage.size(); i++){
  		    CyRow nameRow = nodeTable.getRow(suidstorage.get(i)); 
-   		    String namedata = nameRow.get("name", String.class);
+   		    String namedata = nameRow.get("name", String.class) + "\t" + nameRow.get("Label", String.class);
    		    
    		    if ((// BioPax
    		    		(nodeTable.getColumn("NCBI GENE") != null) && (nameRow.get("NCBI GENE", String.class) == null)
@@ -1154,10 +1235,17 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 		for (int cou = 0; cou < sortedPAIdata.size(); cou++){			 		 
 			outPAI.print(sortedPAIdata.get(cou).getKey());
 			outPAI.print("\t");
-			outPAI.println(sortedPAIdata.get(cou).getValue());	
-		}	   
+			outPAI.println(sortedPAIdata.get(cou).getValue());
+			
+			if (KEGGnetwork){
+				String[] nodeID = sortedPAIdata.get(cou).getKey().split("\t");
+				String[] geneID = nodeID[0].split(" ");
+				PAIurl.print(geneID[0] + "%09%23" + PAIColors.get(sortedPAIdata.get(cou).getValue()) + "/");
+			}
+		}
+		PAIurl.close();
 		outPAI.close();
-        
+						
         // Gene - DI table.
         if (this.Kaksmark){
         	PrintStream outDI = null;
@@ -1173,7 +1261,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	    	
 	        for (int i=0; i<suidstorage.size(); i++){
 	 		    CyRow nameRow = nodeTable.getRow(suidstorage.get(i)); 
-	   		    String namedata = nameRow.get("name", String.class);
+	   		    String namedata = nameRow.get("name", String.class) + "\t" + nameRow.get("Label", String.class);
 	   		    
 	   		    if ((// BioPax
 	   		    		(nodeTable.getColumn("NCBI GENE") != null) && (nameRow.get("NCBI GENE", String.class) == null)
@@ -1210,6 +1298,22 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
         }
         
         if (this.Pamlmark){
+        	
+        	// Gene - DI table.
+            PrintStream DIurl = null;
+            if (KEGGnetwork){
+	    		try{
+	    			DIurl = new PrintStream(deseaseDir + sep
+	    			+ netName + "___DIurl___identity=" + stridentity + "___SW-Score=" + strSW + ".txt");
+	    		}catch (FileNotFoundException e) {
+	    			System.out.println("Can't create DI file");
+	    			DIurl = emptyStream;
+	    		}
+	    		
+	    		DIurl.print("http://www.kegg.jp/kegg-bin/show_pathway?" + orgstorage.get(0) + pathwayID + "/");
+            }
+    		
+    		
         	PrintStream outDI = null;
         	try{
         		outDI = new PrintStream(deseaseDir + sep 
@@ -1223,7 +1327,7 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 	    	
 	        for (int i=0; i<suidstorage.size(); i++){
 	 		    CyRow nameRow = nodeTable.getRow(suidstorage.get(i)); 
-	   		    String namedata = nameRow.get("name", String.class);
+	   		    String namedata = nameRow.get("name", String.class) + "\t" + nameRow.get("Label", String.class);
 	   		    
 	   		    if ((// BioPax
 	   		    		(nodeTable.getColumn("NCBI GENE") != null) && (nameRow.get("NCBI GENE", String.class) == null)
@@ -1250,13 +1354,32 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 					return e2.getValue().compareTo(e1.getValue());
 				}   		 
 			});
-	        	   
+	        
+			float DImax = (float)((double)sortedDIdata.get(0).getValue());
 			for (int cou = 0; cou < sortedDIdata.size(); cou++){			 		 
 				outDI.print(sortedDIdata.get(cou).getKey());
 				outDI.print("\t");
 				outDI.println(sortedDIdata.get(cou).getValue());	
-			}	   
-			outDI.close();
+				// Сделать константой красный (о значение)	
+				if (KEGGnetwork){
+					if (sortedDIdata.get(cou).getValue() == 0){
+						String[] nodeID = sortedDIdata.get(cou).getKey().split("\t");
+						String[] geneID = nodeID[0].split(" ");
+						DIurl.print(geneID[0] + "%09%23ff0000/");	
+						continue;
+					}
+					float value = (float) (sortedDIdata.get(cou).getValue()/DImax);
+		    	    getHeatMapColor(value);
+		    	    Color curC = new Color(red,green,blue);
+		   		    int curCode = curC.getRGB();
+					
+					String[] nodeID = sortedDIdata.get(cou).getKey().split("\t");
+					String[] geneID = nodeID[0].split(" ");
+					DIurl.print(geneID[0] + "%09%23" + Integer.toHexString(curCode).substring(2, Integer.toHexString(curCode).length()) + "/");	
+				}
+	  		}	   
+			DIurl.close();
+			outDI.close();			
         }
 		
        
@@ -1432,23 +1555,28 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
     				break;
     			}
     		}
-    		    		
-    		if (matchcounter == 0){
-    			allAges[rowCounter] = "Cellular Organisms";
+    		    	
+    		if ( (matchcounter == 0) && (tempAgelines.length > 2)){
+    			curTaxOut.println("\t\t\t Previous sequence missed because of big step between taxonomical groups");
     		}
-    		else{
-    			String someAge = tempAge;
-    			String resAge = "";
-    			for (int ma=0; ma<matchcounter-1; ma++){
+    		else{ 
+	    		if (matchcounter == 0){
+	    			allAges[rowCounter] = "Cellular Organisms";
+	    		}
+	    		else{
+	    			String someAge = tempAge;
+	    			String resAge = "";
+	    			for (int ma=0; ma<matchcounter-1; ma++){
+		    			String[] splitAges = someAge.split(";", 2);
+		    			someAge = splitAges[1];
+		    			resAge += splitAges[0] + ";";
+	    			}
 	    			String[] splitAges = someAge.split(";", 2);
-	    			someAge = splitAges[1];
-	    			resAge += splitAges[0] + ";";
-    			}
-    			String[] splitAges = someAge.split(";", 2);
-    			resAge += splitAges[0];  			
-    			allAges[rowCounter] = resAge;
+	    			resAge += splitAges[0];  			
+	    			allAges[rowCounter] = resAge;
+	    		}
+	    		allAgesPower[rowCounter]++;
     		}
-    		allAgesPower[rowCounter]++;
     	}
 	    // Orthologs loading
 	    curlines = curURL.split("\n", 2);
@@ -1801,6 +1929,11 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 		    				break;
 		    			}
 		    		}
+		    		if ( (matchcounter == 0) && (tempAgelines.length > 2)){
+		    			curTaxOut.println("\t\t\t Previous sequence missed because of big step between taxonomical groups");
+		    			missedgomologs++;
+		    			continue;
+		    		}
 		    		if (matchcounter == 0){
 		    			allAges[rowCounter] = "Cellular Organisms";
 		    		}
@@ -1821,7 +1954,8 @@ public class AgeSearchTask extends AbstractTask  implements ApplicationConstants
 		    				// Right now it's wrong for DI Power. Without comment it will be wrong for PAI Power.    				
 			    			//	else{
 			    			//		allAgesPower[rowCounter]--;
-			    			//	}		    			}		    			else{		    				dihappened(curName, currentgomologs.get(counter), rowCounter);		    			}					    }	
+			    			//	}		    			}		    			else{		    				dihappened(curName, currentgomologs.get(counter), rowCounter);		    			}
+		    			pamlNumber[rowCounter]+=1;				    }	
 	    		}
 	    	}
 		}
@@ -1885,6 +2019,13 @@ void dihappened(String curOrgName, String curHomoName, int rowCounter){
 				pamlSumm[rowCounter] += Double.parseDouble(temp);
 				temp = reader.readLine();
 				pamlSummx2[rowCounter] += Double.parseDouble(temp);
+				temp = reader.readLine();
+				if (DIType[rowCounter].equals("")){
+			    	DIType[rowCounter] += temp;
+			    }
+			    else{
+			    	DIType[rowCounter] = DIType[rowCounter] + ", " + temp;
+			    }
 		   		reader.close();
 		   		
 		   		if ((pamlSumm[rowCounter] == 0) && (pamlSummx2[rowCounter] == 0)){
@@ -1924,6 +2065,13 @@ void dihappened(String curOrgName, String curHomoName, int rowCounter){
 					pamlSumm[rowCounter] += Double.parseDouble(temp);
 					temp = reader.readLine();
 					pamlSummx2[rowCounter] += Double.parseDouble(temp);
+					temp = reader.readLine();
+					if (DIType[rowCounter].equals("")){
+				    	DIType[rowCounter] += temp;
+				    }
+				    else{
+				    	DIType[rowCounter] = DIType[rowCounter] + ", " + temp;
+				    }
 			   		reader.close();
 			   		
 			   		if ((pamlSumm[rowCounter] == 0) && (pamlSummx2[rowCounter] == 0)){
@@ -2258,6 +2406,7 @@ void dihappened(String curOrgName, String curHomoName, int rowCounter){
 			LWL85value = -1;
 			LWL85mvalue = -1;
 			LPB93value = -1;
+			DItype = "FileNotFound";
 		}
 		else{
 			// There are PAML results parsing. It can be optimized by deleting measure name splitting.
@@ -2292,19 +2441,52 @@ void dihappened(String curOrgName, String curHomoName, int rowCounter){
 //			finalSplitter = localSplitter[1].split(" ");
 			String LPB93str = localSplitter[1].trim();
 			if (LPB93str.contains("#IND") || LWL85str.contains("#INF")){
-				LPB93value = -1;
+				LPB93value = -1;	
 			}
 			else{
 				LPB93value = Double.valueOf(LPB93str);
 			}	
+			String dsdnStr = localSplitter[0].trim();
+			String[] dnparse = dsdnStr.split("dN =", 2);
+			double dN = Double.valueOf(dnparse[1].trim());
+			String[] dsparse = dnparse[0].split("dS =", 2);
+			double dS = Double.valueOf(dsparse[1].trim());
+			if ((dN==0) && (dS==0)){
+				DItype = "ZeroToZero";
+			}
+			else{
+				if ((dN!=0) && (dS==0)){
+					DItype = "NumberToZero";
+				}
+				else{
+					if ((dN==0) && (dS!=0)){
+						DItype = "ZeroToNumber";
+					}
+					else{
+						DItype = "NumberToNumber";
+					}
+				}
+			}
 		}
     	// We should check the most important measure. right now it's LPB93 
     	if (LPB93value > 0){	
 			pamlSumm[rowCounter] += LPB93value;	
 		    pamlSummx2[rowCounter] += LPB93value*LPB93value;
-		}	
+		    if (DIType[rowCounter].equals("")){
+		    	DIType[rowCounter] += DItype;
+		    }
+		    else{
+		    	DIType[rowCounter] = DIType[rowCounter] + ", " + DItype;
+		    }
+    	}
 		else{	
-			pamlEmpty[rowCounter] += 1;          	
+			pamlEmpty[rowCounter] += 1;  
+			if (DIType[rowCounter].equals("")){
+				DIType[rowCounter] += DItype;
+			}
+			else{
+			   	DIType[rowCounter] = DIType[rowCounter] + ", " + DItype;
+			}
 		}
 		
 		if (inputmark || updatemark){
@@ -2313,10 +2495,10 @@ void dihappened(String curOrgName, String curHomoName, int rowCounter){
 				DIfile.createNewFile();
 			}catch (IOException e2){ System.out.println("Can't create the file " + DIfile.toString()); }		
 			if (LPB93value > 0){	
-				OrthoscapeHelpFunctions.doubleFilePrinting(DIfile, Double.toString(LPB93value), Double.toString(LPB93value*LPB93value));
+				OrthoscapeHelpFunctions.tripleFilePrinting(DIfile, Double.toString(LPB93value), Double.toString(LPB93value*LPB93value), DItype);
 			}	
 			else{	
-				OrthoscapeHelpFunctions.doubleFilePrinting(DIfile, "0", "0");         	
+				OrthoscapeHelpFunctions.tripleFilePrinting(DIfile, "0", "0", DItype);         	
 			}	  		
 	    }	    	
 	}
@@ -4024,5 +4206,37 @@ public void setMlwlKaKs(double mlwlKaKs) {
 		codonDegreeMap.put(TRYPTOPHAN, "000");
 		codonDegreeMap.put(ARGININE, "204");
 		codonDegreeMap.put(GLYCINE, "004");	
+	}
+	
+	
+	public void getValueBetweenTwoFixedColors(float value){
+		int aR = 0;   int aG = 0; int aB=255;  // RGB for our 1st color (blue in this case).
+		int bR = 255; int bG = 0; int bB=0;    // RGB for our 2nd color (red in this case).
+	 
+		red   = (int) ((float)(bR - aR) * value + aR);      // Evaluated as -255*value + 255.
+		green = (int) ((float)(bG - aG) * value + aG);      // Evaluates as 0.
+		blue  = (int) ((float)(bB - aB) * value + aB);      // Evaluates as 255*value + 0.
+	}
+	
+	void getHeatMapColor(float value){
+	  int NUM_COLORS = 5;
+	  float[][] color = { {1,0,0}, {1,1,0}, {0,1,0}, {0,1,1}, {0,0.25f,1}};
+	 
+	  int idx1;        // |-- Our desired color will be between these two indexes in "color".
+	  int idx2;        // |
+	  float fractBetween = 0;  // Fraction between "idx1" and "idx2" where our value is.
+	 
+	  if(value <= 0){ idx1 = idx2 = 0;}    // accounts for an input <=0
+	  else if(value >= 1)  {idx1 = idx2 = NUM_COLORS-1;}    // accounts for an input >=0
+	  else{
+	    value = value * (NUM_COLORS-1);         // Will multiply value by 3.
+	    idx1  = (int)value;                     // Our desired color will be after this index.
+	    idx2  = idx1+1;                         // ... and before this index (inclusive).
+	    fractBetween = value - idx1;			// Distance between the two indexes (0-1).
+	  }
+	 
+	  red   = (int) (255*((color[idx2][0] - color[idx1][0])*fractBetween + color[idx1][0]));
+	  green = (int) (255*((color[idx2][1] - color[idx1][1])*fractBetween + color[idx1][1]));
+	  blue  = (int) (255*((color[idx2][2] - color[idx1][2])*fractBetween + color[idx1][2]));
 	}
 }

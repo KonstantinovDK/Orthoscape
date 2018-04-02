@@ -88,6 +88,16 @@ public abstract class OrthoscapeHelpFunctions{
 		}catch (IOException e2){System.out.println("Can't write data to the file " + file.toString());}
 	}
 
+	static void tripleFilePrinting(File file, String data1, String data2, String data3){
+	    try {
+	    	PrintStream outStream = new PrintStream(file.toString());
+	    	outStream.println(data1);
+	    	outStream.println(data2);
+	    	outStream.println(data3);
+	    	outStream.close();	
+		}catch (IOException e2){System.out.println("Can't write data to the file " + file.toString());}
+	}
+	
 	static void listFilePrinting(File file, List<String> data){
 		try {
 	    	PrintStream outStream = new PrintStream(file.toString());

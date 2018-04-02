@@ -42,7 +42,7 @@ public class HomologUngroupingTask extends AbstractTask {
 				if (curGroup.isCollapsed(network)){
 					curGroup.expand(network);
 				}
-				curGroup.removeGroupFromNetwork(network);
+		//		curGroup.removeGroupFromNetwork(network);
 				
 				cyGroupManager.destroyGroup(cyGroupManager.getGroup(curList4.get(j), network));
 	
